@@ -4,11 +4,11 @@ import numpy as np
 mesh = om.TriMesh()
 
 # add a a couple of vertices to the mesh
-vh0 = mesh.add_vertex([0, 1, 0])
-vh1 = mesh.add_vertex([1, 0, 0])
-vh2 = mesh.add_vertex([2, 1, 0])
-vh3 = mesh.add_vertex([0,-1, 0])
-vh4 = mesh.add_vertex([2,-1, 0])
+vh0 = mesh.add_vertex([0, 1])
+vh1 = mesh.add_vertex([1, 0])
+vh2 = mesh.add_vertex([2, 1])
+vh3 = mesh.add_vertex([0, -1])
+vh4 = mesh.add_vertex([2, -1])
 
 # add a couple of faces to the mesh
 fh0 = mesh.add_face(vh0, vh1, vh2)
@@ -37,5 +37,5 @@ point_array = mesh.points()
 point_array += np.array([1, 0, 0])
 
 # write and read meshes
-om.write_mesh('test.off', mesh)
-mesh_2 = om.read_trimesh('test.off')
+if __name__ == '__main__':
+    mesh.point(vh0)
