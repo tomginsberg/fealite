@@ -1,8 +1,9 @@
-from typing import Tuple, List
+from typing import Tuple, List, Union
 import numpy as np
 from subprocess import run
 from os.path import realpath
 from shapefunction import LinearShapeFunction
+import matplotlib.pyplot as plt
 
 
 class TriangleMesh:
@@ -15,16 +16,15 @@ class TriangleMesh:
         self.mesh_elements: List[Tuple[int, int, int]] = []
         self.mesh_markers: List[int] = []
         self.mesh_shape_functions: List[LinearShapeFunction] = []
+        self.neighbors: List[List[int]] = []
 
         # list of line elements with boundary markers
         self.boundary_elements: List[Tuple[int, int]] = []
         self.boundary_markers: List[int] = []
 
-        # default: material[0] = permittivity of free space
-        # for magnetic simulations use mu = 4π * 10 ^-7
-        self.material_constants: List[float] = [8.854e-12]
-
         self._parse_file(file_name)
+        self._compute_shape_functions()
+        self._compute_neighbors()
 
     def _parse_file(self, file_name: str):
         with open(file_name, 'r') as f:
@@ -44,8 +44,15 @@ class TriangleMesh:
         self.mesh_shape_functions = [LinearShapeFunction(*self.element_coords(element)) for element in
                                      self.mesh_elements]
 
+    def _compute_neighbors(self):
+        self.neighbors = [[] for _ in self.coordinates]
+        for element in self.mesh_elements:
+            for v1 in element:
+                for v2 in element:
+                    self.neighbors[v1].append(v2)
+
     def _add_coordinate(self, x: float, y: float):
-        self.coordinates.append(np.array((x, y), dtype='float16'))
+        self.coordinates.append(np.array((x, y)))
 
     def _add_mesh_element(self, v1: int, v2: int, v3: int, mesh_marker: int):
         self.mesh_elements.append((v1 - 1, v2 - 1, v3 - 1))
@@ -54,9 +61,6 @@ class TriangleMesh:
     def _add_boundary_element(self, v1: int, v2: int, boundary_marker: int):
         self.boundary_elements.append((v1 - 1, v2 - 1))
         self.boundary_markers.append(boundary_marker)
-
-    def set_material_constants(self, mapping: List[float]):
-        self.material_constants = mapping
 
     def element_coords(self, element: Tuple[int, int, int]) -> List[np.ndarray]:
         return [self.coordinates[i] for i in element]
@@ -68,6 +72,31 @@ class TriangleMesh:
             output_file = self.file_name[:-3] + 'pdf'
         return run(['wolframscript', '-f', f'{input_file}', f'{output_file}'])
 
+    def show_mesh(self, title: Union[str, None] = 'filename', label_everything=False):
+        plt.axes()
+        for mesh_id, (i, j, k) in enumerate(self.mesh_elements):
+            vertices = self.element_coords((i, j, k))
+            tri = plt.Polygon(vertices, edgecolor='black',
+                              linewidth=.3, facecolor='white')
+            plt.gca().add_patch(tri)
+            if label_everything:
+                plt.text(*vertices[0], f'{i}', size=12)
+                plt.text(*vertices[1], f'{j}', size=12)
+                plt.text(*vertices[2], f'{k}', size=12)
+                plt.text(*sum(vertices) / 3, f'{mesh_id}', size=12)
+
+        if title == 'filename':
+            plt.title(self.file_name.split('/')[-1][:-4])
+        if title is not None:
+            plt.title(title)
+        plt.axis('scaled')
+        plt.show()
+
+    def __len__(self):
+        return len(self.coordinates)
+
 
 if __name__ == '__main__':
-    mesh = TriangleMesh(file_name='meshes/sample-mesh1.tmh')
+    # mesh = TriangleMesh(file_name='meshes/sample-mesh1-reordered.tmh')
+    mesh = TriangleMesh(file_name='meshes/simple-mesh.tmh')
+    mesh.show_mesh(title=None, label_everything=True)
