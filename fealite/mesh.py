@@ -1,4 +1,4 @@
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Dict
 import numpy as np
 from subprocess import run
 from os.path import realpath
@@ -21,10 +21,11 @@ class TriangleMesh:
         # list of line elements with boundary markers
         self.boundary_elements: List[Tuple[int, int]] = []
         self.boundary_markers: List[int] = []
+        self.boundary_master: Dict[int, int] = {}
 
         self._parse_file(file_name)
         self._compute_shape_functions()
-        self._compute_neighbors()
+        # self._compute_neighbors()
 
     def _parse_file(self, file_name: str):
         with open(file_name, 'r') as f:
@@ -32,7 +33,8 @@ class TriangleMesh:
         section = None
         for line in lines:
             if '#' in line:
-                section = line[1:].strip()
+                section, count = line[1:].strip().split('-')
+
             elif section == 'Coordinates':
                 self._add_coordinate(*[float(x) for x in line.split('\t')])
             elif section == 'Triangle Elements':
@@ -61,6 +63,8 @@ class TriangleMesh:
     def _add_boundary_element(self, v1: int, v2: int, boundary_marker: int):
         self.boundary_elements.append((v1 - 1, v2 - 1))
         self.boundary_markers.append(boundary_marker)
+        self.boundary_master[v1 - 1] = boundary_marker
+        self.boundary_master[v2 - 1] = boundary_marker
 
     def element_coords(self, element: Tuple[int, int, int]) -> List[np.ndarray]:
         return [self.coordinates[i] for i in element]
@@ -98,5 +102,5 @@ class TriangleMesh:
 
 if __name__ == '__main__':
     # mesh = TriangleMesh(file_name='meshes/sample-mesh1-reordered.tmh')
-    mesh = TriangleMesh(file_name='meshes/simple-mesh.tmh')
-    mesh.show_mesh(title=None, label_everything=True)
+    mesh = TriangleMesh('meshes/unit-disk.tmh')
+    mesh.show_mesh(title=None, label_everything=False)
