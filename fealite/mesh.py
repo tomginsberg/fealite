@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 class TriangleMesh:
     def __init__(self, file_name: str):
         self.file_name = realpath(file_name)
+        self.short_name = file_name.split('/')[-1][:-4]
         # coordinate lookup for vertex i
         self.coordinates: List[np.ndarray] = []
 
@@ -101,6 +102,6 @@ class TriangleMesh:
 
 
 if __name__ == '__main__':
-    # mesh = TriangleMesh(file_name='meshes/sample-mesh1-reordered.tmh')
-    mesh = TriangleMesh('meshes/unit-disk.tmh')
-    mesh.show_mesh(title=None, label_everything=False)
+    # mesh = TriangleMesh(file_name='meshes/cylinder-in-square.tmh')
+    mesh = TriangleMesh('meshes/verysimple2.tmh')
+    mesh.show_mesh(title=None, label_everything=True)
