@@ -5,7 +5,6 @@ from mesh import TriangleMesh
 from abc import ABC
 from math import pi
 from scipy.sparse.linalg import spsolve
-from scipy import sparse
 import matrix_assmbly
 
 
@@ -51,6 +50,7 @@ class Poisson:
                                                                  self.alpha)
         self.b = matrix_assmbly.assemble_global_vector(self.mesh, self.f, self.K.shape[0])
         self.apply_dirichlet()
+        self.apply_neumann()
         self.K = self.K.tocsc()
         self.solution = spsolve(self.K, self.b)
 
@@ -64,6 +64,9 @@ class Poisson:
                 self.K[v] = 0
                 self.K[v, v] = 1
                 self.b[v, 0] = boundary_value
+
+    def apply_neumann(self):
+        raise NotImplementedError
 
     def export_solution(self):
         export_path = f'solutions/{self.mesh.short_name}_{self.name}.txt'
@@ -126,5 +129,5 @@ class InsulatingObject(PoissonProblemDefinition):
 if __name__ == '__main__':
     # problem = Poisson(DielectricCylinder('meshes/sample-mesh1.tmh'))
     # problem = Poisson(DielectricCylinder('meshes/cylinder-in-square-fine.tmh', 'dielectric'))
-    problem = Poisson(InsulatingObject('meshes/heart.tmh', 'insulator'))
+    problem = Poisson(InsulatingObject('meshes/heart.tmh', 'dielectric'))
     problem.export_solution()
