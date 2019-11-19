@@ -6,8 +6,7 @@ from abc import ABC
 from math import pi
 from scipy.sparse.linalg import spsolve
 from scipy import sparse
-from scipy.interpolate import interp2d
-from matrix_assmbly import assemble_global_stiffness_matrix
+import matrix_assmbly
 
 
 class PoissonProblemDefinition(ABC):
@@ -48,18 +47,12 @@ class Poisson:
         self.f = definition.source
         self.p = definition.dirichlet_boundary
         self.q = definition.neumann_boundary
-        self.K = assemble_global_stiffness_matrix(self.mesh.mesh_elements,
-                                                  self.mesh.mesh_shape_functions,
-                                                  self.mesh.mesh_markers,
-                                                  self.alpha)
-        self.b = self.assemble_vector()
+        self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh,
+                                                                 self.alpha)
+        self.b = matrix_assmbly.assemble_global_vector(self.mesh, self.f, self.K.shape[0])
         self.apply_dirichlet()
         self.K = self.K.tocsc()
         self.solution = spsolve(self.K, self.b)
-
-    def assemble_vector(self):
-        # TODO: Implement this
-        return sparse.coo_matrix((self.K.shape[0], 1)).tolil()
 
     def apply_dirichlet(self):
         for v, marker in self.mesh.boundary_master.items():
@@ -115,7 +108,23 @@ class SampleProblem(PoissonProblemDefinition):
         return None
 
 
+class InsulatingObject(PoissonProblemDefinition):
+
+    def linear_material(self, element_marker: int) -> float:
+        return self.EPS0
+
+    def source(self, element_marker: int, coordinate: np.ndarray) -> float:
+        return 1 if element_marker == 2 else 0
+
+    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
+        return 1 if np.linalg.norm(coordinate) < 1.3 else None
+
+    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
+        return None
+
+
 if __name__ == '__main__':
     # problem = Poisson(DielectricCylinder('meshes/sample-mesh1.tmh'))
-    problem = Poisson(DielectricCylinder('meshes/cylinder-in-square.tmh', 'dielectric'))
+    # problem = Poisson(DielectricCylinder('meshes/cylinder-in-square-fine.tmh', 'dielectric'))
+    problem = Poisson(InsulatingObject('meshes/heart.tmh', 'insulator'))
     problem.export_solution()
