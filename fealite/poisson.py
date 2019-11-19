@@ -50,7 +50,7 @@ class Poisson:
                                                                  self.alpha)
         self.b = matrix_assmbly.assemble_global_vector(self.mesh, self.f, self.K.shape[0])
         self.apply_dirichlet()
-        self.apply_neumann()
+        # self.apply_neumann()
         self.K = self.K.tocsc()
         self.solution = spsolve(self.K, self.b)
 
@@ -86,9 +86,9 @@ class DielectricCylinder(PoissonProblemDefinition):
         return 0
 
     def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
-        if boundary_marker == 2:
+        if boundary_marker == 1:
             return 1
-        elif boundary_marker == 4:
+        elif boundary_marker == 3:
             return -1
         return None
 
@@ -129,5 +129,5 @@ class InsulatingObject(PoissonProblemDefinition):
 if __name__ == '__main__':
     # problem = Poisson(DielectricCylinder('meshes/sample-mesh1.tmh'))
     # problem = Poisson(DielectricCylinder('meshes/cylinder-in-square-fine.tmh', 'dielectric'))
-    problem = Poisson(InsulatingObject('meshes/heart.tmh', 'dielectric'))
+    problem = Poisson(DielectricCylinder('meshes/heart.tmh', 'dielectric'))
     problem.export_solution()
