@@ -34,7 +34,7 @@ class PoissonProblemDefinition(ABC):
 
 class Poisson:
     """
-    Assembles the FEA matrix for the general Poisson problem -∇ · ( alpha(material) ∇phi(x,y) ) = f(x,y; material)
+    Assembles the FEA matrix for the general Poisson problem  ∇·( alpha(material) ∇phi(x,y) ) = f(x,y; material)
     alpha is a spatial function only of the material properties (i.e ε)
     f is a source function of a material and coordinate (i.e ρ)
     """
@@ -114,13 +114,14 @@ class SampleProblem(PoissonProblemDefinition):
 class InsulatingObject(PoissonProblemDefinition):
 
     def linear_material(self, element_marker: int) -> float:
-        return self.EPS0
+        return 1 #self.EPS0
 
     def source(self, element_marker: int, coordinate: np.ndarray) -> float:
-        return 1 if element_marker == 2 else 0
+        return -1 if element_marker == 2 else None
 
     def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
-        return 1 if np.linalg.norm(coordinate) < 1.3 else None
+        # set potential to 1 on the surface of any object in the disk of radius 2
+        return 1 if np.linalg.norm(coordinate) < 2 else None
 
     def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
         return None
@@ -128,6 +129,6 @@ class InsulatingObject(PoissonProblemDefinition):
 
 if __name__ == '__main__':
     # problem = Poisson(DielectricCylinder('meshes/sample-mesh1.tmh'))
-    # problem = Poisson(DielectricCylinder('meshes/cylinder-in-square-fine.tmh', 'dielectric'))
-    problem = Poisson(DielectricCylinder('meshes/heart.tmh', 'dielectric'))
+    problem = Poisson(InsulatingObject('meshes/cylinder-in-square-fine.tmh', 'dielectric'))
+    # problem = Poisson(DielectricCylinder('meshes/heart.tmh', 'dielectric'))
     problem.export_solution()

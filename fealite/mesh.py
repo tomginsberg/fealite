@@ -77,18 +77,18 @@ class TriangleMesh:
             output_file = self.file_name[:-3] + 'pdf'
         return run(['wolframscript', '-f', f'{input_file}', f'{output_file}'])
 
-    def show_mesh(self, title: Union[str, None] = 'filename', label_everything=False):
+    def show_mesh(self, title: Union[str, None] = 'filename', label=False):
         plt.axes()
         for mesh_id, (i, j, k) in enumerate(self.mesh_elements):
             vertices = self.element_coords((i, j, k))
             tri = plt.Polygon(vertices, edgecolor='black',
                               linewidth=.3, facecolor='white')
             plt.gca().add_patch(tri)
-            if label_everything:
-                plt.text(*vertices[0], f'{i}', size=12)
-                plt.text(*vertices[1], f'{j}', size=12)
-                plt.text(*vertices[2], f'{k}', size=12)
-                plt.text(*sum(vertices) / 3, f'{mesh_id}', size=12)
+            if label:
+                plt.text(*sum(vertices) / 3, f'{self.mesh_markers[mesh_id]}', size=12)
+
+        for mesh_id, element in enumerate(self.boundary_elements):
+            plt.text(*sum([self.coordinates[i] for i in element]) / 2, f'{self.boundary_markers[mesh_id]}', size=12)
 
         if title == 'filename':
             plt.title(self.file_name.split('/')[-1][:-4])
@@ -103,6 +103,6 @@ class TriangleMesh:
 
 if __name__ == '__main__':
     # mesh = TriangleMesh(file_name='meshes/cylinder-in-square.tmh')
-    mesh = TriangleMesh('meshes/heart.tmh')
-    mesh.render_mesh()
+    mesh = TriangleMesh('meshes/unit-disk.tmh')
+    mesh.show_mesh(label=True, title=None)
     # mesh.show_mesh(title=None, label_everything=False)
