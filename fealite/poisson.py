@@ -24,7 +24,7 @@ class PoissonProblemDefinition(ABC):
     def linear_material(self, element_marker: int) -> float:
         raise NotImplementedError
 
-    def source(self, element_marker: int, coordinate: np.ndarray) -> float:
+    def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
         raise NotImplementedError
 
     def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
@@ -88,7 +88,7 @@ class DielectricObjectInUniformField(PoissonProblemDefinition):
             return 1
         return 5
 
-    def source(self, element_marker: int, coordinate: np.ndarray) -> float:
+    def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
         return 0
 
     def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
@@ -107,7 +107,7 @@ class SampleProblem(PoissonProblemDefinition):
     def linear_material(self, element_marker: int) -> float:
         return 1
 
-    def source(self, element_marker: int, coordinate: np.ndarray) -> float:
+    def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
         return 0
 
     def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
@@ -124,7 +124,7 @@ class InsulatingObject(PoissonProblemDefinition):
     def linear_material(self, element_marker: int) -> float:
         return 1
 
-    def source(self, element_marker: int, coordinate: np.ndarray) -> float:
+    def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
         return 1 if element_marker == 2 else None
 
     def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
@@ -139,13 +139,35 @@ class DielectricHeart(DielectricObjectInUniformField):
         super().__init__(mesh, name, positive=1, negative=3)
 
 
+class Airfoil(PoissonProblemDefinition):
+    def __init__(self, mesh: Union[str, TriangleMesh], name: str = 'euler-flow'):
+        super().__init__(mesh, name)
+
+    def linear_material(self, element_marker: int) -> float:
+        return 1
+
+    def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
+        return None
+
+    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
+        if boundary_marker == 4:
+            return 1
+        if boundary_marker == 2:
+            return -1
+        return None
+
+    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
+        pass
+
+
 class Meshes:
     cylinder_in_square = 'meshes/cylinder-in-square.tmh'
+    airfoil = 'meshes/airfoil.tmh'
     annulus = 'meshes/annulus.tmh'
     cylinder_in_square_fine = 'meshes/cylinder-in-square-fine.tmh'
     heart = 'meshes/heart.tmh'
 
 
 if __name__ == '__main__':
-    problem = Poisson(InsulatingObject(Meshes.cylinder_in_square))
+    problem = Poisson(Airfoil(Meshes.airfoil))
     problem.export_solution()

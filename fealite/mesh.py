@@ -101,8 +101,16 @@ class TriangleMesh:
         return len(self.coordinates)
 
 
+class Meshes:
+    cylinder_in_square = 'meshes/cylinder-in-square.tmh'
+    airfoil = 'meshes/airfoil.tmh'
+    annulus = 'meshes/annulus.tmh'
+    cylinder_in_square_fine = 'meshes/cylinder-in-square-fine.tmh'
+    heart = 'meshes/heart.tmh'
+
+
 if __name__ == '__main__':
     # mesh = TriangleMesh(file_name='meshes/cylinder-in-square.tmh')
-    mesh = TriangleMesh('meshes/annulus.tmh')
+    mesh = TriangleMesh(Meshes.airfoil)
     mesh.show_mesh(label=True, title=None)
     # mesh.show_mesh(title=None, label_everything=False)
