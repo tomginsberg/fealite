@@ -86,9 +86,9 @@ class DielectricCylinder(PoissonProblemDefinition):
         return 0
 
     def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
-        if boundary_marker == 1:
+        if boundary_marker == 2:
             return 1
-        elif boundary_marker == 3:
+        elif boundary_marker == 4:
             return -1
         return None
 
@@ -114,14 +114,14 @@ class SampleProblem(PoissonProblemDefinition):
 class InsulatingObject(PoissonProblemDefinition):
 
     def linear_material(self, element_marker: int) -> float:
-        return 1 #self.EPS0
+        return 1  # self.EPS0
 
     def source(self, element_marker: int, coordinate: np.ndarray) -> float:
         return -1 if element_marker == 2 else None
 
     def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
         # set potential to 1 on the surface of any object in the disk of radius 2
-        return 1 if np.linalg.norm(coordinate) < 2 else None
+        return 1 / 4 if np.linalg.norm(coordinate) < 2 else None
 
     def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
         return None
@@ -129,6 +129,6 @@ class InsulatingObject(PoissonProblemDefinition):
 
 if __name__ == '__main__':
     # problem = Poisson(DielectricCylinder('meshes/sample-mesh1.tmh'))
-    problem = Poisson(InsulatingObject('meshes/cylinder-in-square-fine.tmh', 'dielectric'))
+    problem = Poisson(DielectricCylinder('meshes/cylinder-in-square-fine.tmh', 'dielectric'))
     # problem = Poisson(DielectricCylinder('meshes/heart.tmh', 'dielectric'))
     problem.export_solution()

@@ -28,7 +28,7 @@ class LinearShapeFunction:
               [(c2, c3), (c3, c1), (c1, c2)]]]) / self.double_area
 
         self.stiffness_matrix = np.array(np.matmul(self.div_N_ijk__x.transpose(), self.div_N_ijk__x) + np.matmul(
-            self.div_N_ijk__y.transpose(), self.div_N_ijk__y))
+            self.div_N_ijk__y.transpose(), self.div_N_ijk__y)) * self.double_area / 2
 
     def shape_values(self, x, y):
         return np.matmul(self.N_ijk, [1, x, y])
