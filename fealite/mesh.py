@@ -1,4 +1,4 @@
-from typing import Tuple, List, Union, Dict
+from typing import Tuple, List, Union, Dict, Optional
 import numpy as np
 from subprocess import run
 from os.path import realpath
@@ -77,7 +77,7 @@ class TriangleMesh:
             output_file = self.file_name[:-3] + 'pdf'
         return run(['wolframscript', '-f', f'{input_file}', f'{output_file}'])
 
-    def show_mesh(self, title: Union[str, None] = 'filename', label=False):
+    def show_mesh(self, title: Optional[str] = 'filename', label=False):
         plt.axes()
         for mesh_id, (i, j, k) in enumerate(self.mesh_elements):
             vertices = self.element_coords((i, j, k))
@@ -103,6 +103,6 @@ class TriangleMesh:
 
 if __name__ == '__main__':
     # mesh = TriangleMesh(file_name='meshes/cylinder-in-square.tmh')
-    mesh = TriangleMesh('meshes/cylinder-in-square.tmh')
+    mesh = TriangleMesh('meshes/annulus.tmh')
     mesh.show_mesh(label=True, title=None)
     # mesh.show_mesh(title=None, label_everything=False)

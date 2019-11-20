@@ -1,5 +1,7 @@
 import numpy as np
-from typing import Union
+from typing import Union, Optional
+
+from attr import dataclass
 
 from mesh import TriangleMesh
 from abc import ABC
@@ -25,16 +27,16 @@ class PoissonProblemDefinition(ABC):
     def source(self, element_marker: int, coordinate: np.ndarray) -> float:
         raise NotImplementedError
 
-    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
+    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
         raise NotImplementedError
 
-    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
+    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
         raise NotImplementedError
 
 
 class Poisson:
     """
-    Assembles the FEA matrix for the general Poisson problem  ∇·( alpha(material) ∇phi(x,y) ) = f(x,y; material)
+    Assembles the FEA matrix for the general Poisson problem  - ∇·( alpha(material) ∇phi(x,y) ) = f(x,y; material)
     alpha is a spatial function only of the material properties (i.e ε)
     f is a source function of a material and coordinate (i.e ρ)
     """
@@ -75,24 +77,28 @@ class Poisson:
                                     zip(self.mesh.coordinates, self.solution)]) + '}')
 
 
-class DielectricCylinder(PoissonProblemDefinition):
+class DielectricObjectInUniformField(PoissonProblemDefinition):
+    def __init__(self, mesh: Union[str, TriangleMesh], name: str = 'dielectric', positive=2, negative=4):
+        super().__init__(mesh, name)
+        self.positive = positive
+        self.negative = negative
 
     def linear_material(self, element_marker: int) -> float:
         if element_marker == 1:
-            return self.EPS0
-        return 5 * self.EPS0
+            return 1
+        return 5
 
     def source(self, element_marker: int, coordinate: np.ndarray) -> float:
         return 0
 
-    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
-        if boundary_marker == 2:
+    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
+        if boundary_marker == self.positive:
             return 1
-        elif boundary_marker == 4:
+        elif boundary_marker == self.negative:
             return -1
         return None
 
-    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
+    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
         return None
 
 
@@ -104,31 +110,42 @@ class SampleProblem(PoissonProblemDefinition):
     def source(self, element_marker: int, coordinate: np.ndarray) -> float:
         return 0
 
-    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
+    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
         return coordinate[0] * coordinate[1]
 
-    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
+    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
         return None
 
 
 class InsulatingObject(PoissonProblemDefinition):
+    def __init__(self, mesh: Union[str, TriangleMesh], name: str = 'insulator'):
+        super().__init__(mesh, name)
 
     def linear_material(self, element_marker: int) -> float:
-        return 1  # self.EPS0
+        return 1
 
     def source(self, element_marker: int, coordinate: np.ndarray) -> float:
-        return -1 if element_marker == 2 else None
+        return 1 if element_marker == 2 else None
 
-    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
-        # set potential to 1 on the surface of any object in the disk of radius 2
-        return 1 / 4 if np.linalg.norm(coordinate) < 2 else None
+    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
+        return -np.log(np.linalg.norm(coordinate)) / 2 - 1 / 4 if np.linalg.norm(coordinate) > 2 else None
 
-    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Union[float, None]:
+    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
         return None
 
 
+class DielectricHeart(DielectricObjectInUniformField):
+    def __init__(self, mesh: Union[str, TriangleMesh], name: str = 'dielectric'):
+        super().__init__(mesh, name, positive=1, negative=3)
+
+
+class Meshes:
+    cylinder_in_square = 'meshes/cylinder-in-square.tmh'
+    annulus = 'meshes/annulus.tmh'
+    cylinder_in_square_fine = 'meshes/cylinder-in-square-fine.tmh'
+    heart = 'meshes/heart.tmh'
+
+
 if __name__ == '__main__':
-    # problem = Poisson(DielectricCylinder('meshes/sample-mesh1.tmh'))
-    problem = Poisson(DielectricCylinder('meshes/cylinder-in-square-fine.tmh', 'dielectric'))
-    # problem = Poisson(DielectricCylinder('meshes/heart.tmh', 'dielectric'))
+    problem = Poisson(InsulatingObject(Meshes.cylinder_in_square))
     problem.export_solution()

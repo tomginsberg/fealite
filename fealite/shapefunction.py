@@ -11,11 +11,16 @@ def linear_shape_function_element_derivative(xj, yj, xk, yk, variable='x'):
     return xk - xj
 
 
+class InvalidMeshException(Exception):
+    pass
+
+
 class LinearShapeFunction:
     def __init__(self, c1, c2, c3):
         # Positive area if points are in a clockwise orientation
         self.double_area = np.cross(c2 - c1, c3 - c1)
-
+        if self.double_area < 0:
+            raise InvalidMeshException("Counter clockwise mesh element encountered! ", c1, c2, c3)
         self.N_ijk = np.array(
             [linear_shape_function_row(*x, *y) for x, y in [(c2, c3), (c3, c1), (c1, c2)]]) / self.double_area
 

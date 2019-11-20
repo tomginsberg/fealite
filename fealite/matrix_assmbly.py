@@ -28,7 +28,7 @@ def assemble_global_vector(mesh: TriangleMesh, f: PoissonProblemDefinition.sourc
     for element, shp_fn, marker in zip(mesh.mesh_elements, mesh.mesh_shape_functions,
                                        mesh.mesh_markers):
         for v in element:
-            # TODO: A more exact method can be used here
+            # TODO: A more exact method can be used here, but it's not that important
             source_value = f(marker, mesh.coordinates[v])
             if source_value is not None:
                 rows.append(v)
