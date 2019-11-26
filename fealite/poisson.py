@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Union, Optional
+from typing import Union, Optional, Tuple
 
 from attr import dataclass
 
@@ -34,6 +34,10 @@ class PoissonProblemDefinition(ABC):
         raise NotImplementedError
 
 
+def distance(c1: Tuple[float, float], c2: Tuple[float, float]) -> float:
+    return np.sqrt((c1[0] - c2[0]) ** 2 + (c1[1] - c2[1]) ** 2)
+
+
 class Poisson:
     """
     Assembles the FEA matrix for the general Poisson problem  - ∇·( alpha(material) ∇phi(x,y) ) = f(x,y; material)
@@ -52,7 +56,7 @@ class Poisson:
                                                                  self.alpha)
         self.b = matrix_assmbly.assemble_global_vector(self.mesh, self.f, self.K.shape[0])
         self.apply_dirichlet()
-        # self.apply_neumann()
+        self.apply_neumann()
         self.K = self.K.tocsc()
         self.solution = spsolve(self.K, self.b)
 
@@ -68,7 +72,13 @@ class Poisson:
                 self.b[v, 0] = boundary_value
 
     def apply_neumann(self):
-        raise NotImplementedError
+        for element, marker in zip(self.mesh.boundary_elements, self.mesh.boundary_markers):
+            # This could also be made more accurate, but not that important
+            el_length = distance(*[self.mesh.coordinates[i] for i in element])
+            for e_id in element:
+                neumann_value = self.q(boundary_marker=marker, coordinate=self.mesh.coordinates[e_id])
+                if neumann_value is not None:
+                    self.b[e_id] += el_length / 2 * neumann_value
 
     def export_solution(self):
         export_path = f'solutions/{self.mesh.short_name}_{self.name}.txt'
