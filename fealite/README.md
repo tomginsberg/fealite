@@ -1,4 +1,4 @@
-![](https://i.imgur.com/f0zQcUb.png)
+![](https://i.imgur.com/Fb4SmAp.png)
 
 *A Simple Woflow for Non Linear Poisson Problems*
 
