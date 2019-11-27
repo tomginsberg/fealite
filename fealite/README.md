@@ -22,6 +22,7 @@ mesh = ToElementMesh[bmesh,
 mesh["Wireframe"]
 ```
 ![](https://i.imgur.com/e9ZjHOM.png)
+
 Export to .tmh format
 ```wolfram
 FormatNumbers[{x_, 
