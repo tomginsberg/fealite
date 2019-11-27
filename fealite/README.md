@@ -1,7 +1,7 @@
 ![](https://i.imgur.com/Fb4SmAp.png)
 
-*A Simple Workflow for Non Linear Poisson Problems*
-
+*A Simple Workflow for Linear & Non Linear Poisson Problems*
+### Linear Finite Elements
 #### Example 1: *Dielectric Cylindrical Shell in a Uniform Electric Field*
 Create the Mesh with Mathematica
 ```Mathematica
@@ -19,12 +19,20 @@ dielectric = {0, 1.25};
 mesh = ToElementMesh[bmesh, 
    "RegionMarker" -> Append[{#, 1} & /@ air, {dielectric, 2}], 
    "MeshOrder" -> 1, "NodeReordering" -> True];
-mesh["Wireframe"]
 ```
-![](https://i.imgur.com/e9ZjHOM.png)
+View the mesh
+```Mathematica
+GraphicsRow[{mesh["Wireframe"], 
+  mesh["Wireframe"["MeshElement" -> "BoundaryElements", 
+    "MeshElementMarkerStyle" -> Red]], 
+  mesh["Wireframe"[
+    "MeshElementStyle" -> 
+     FaceForm /@ ColorData["AtlanticColors"] /@ {1/2, 1/4}]]}]
+```
+![](https://i.imgur.com/wlg9WmG.png)
 
 Export to .tmh format
-```Mathematica
+```wolfram
 FormatNumbers[{x_, 
    y_}] := (ToString[
      NumberForm[#1, {8, 8}, ExponentFunction -> (Null &)]] &) /@ {x, y}
@@ -45,7 +53,7 @@ ExportMesh[name_, mesh_] :=
       
 ExportMesh[MeshDirectory<>"annulus.tmh", mesh]
 ```
-```python
+```
 # Coordinates-467
 -0.8743	-1.2190
 . . .
@@ -75,7 +83,7 @@ InterpAndShow[data_, object_] :=
   g = -Grad[f[xx, yy],{xx, yy}]; 
   Show[ContourPlot[
     f[xx, yy], {xx, yy} \[Element] Rectangle[{-3, -3}, {3, 3}], 
-    ColorFunction -> "Pastel"], 
+    ColorFunction -> "Pastel", PlotLegends -> Automatic], 
    Graphics[{Opacity[0], EdgeForm[Thickness[.01/5]], object}], 
    StreamPlot[g, {xx, yy} \[Element] Rectangle[{-3, -3}, {3, 3}]]]]
    
@@ -85,6 +93,7 @@ InterpAndShow[
   ]
 ]
 ```
-![](https://i.imgur.com/QcYc7fF.png)
+![](https://i.imgur.com/MGJ96Kb.png)
+*Equipotential Contours and Field Arrows*
 
 ###### tags: `Non-Linear` `FEA` `Simulation`
