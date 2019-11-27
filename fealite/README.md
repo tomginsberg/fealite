@@ -4,7 +4,7 @@
 
 #### Example 1: *Dielectric Cylindrical Shell in a Uniform Electric Field*
 Create the Mesh with Mathematica
-```wolfram
+```Mathematica
 Needs["NDSolve`FEM`"]
 Needs["FEMAddOns`"]
 
@@ -24,7 +24,7 @@ mesh["Wireframe"]
 ![](https://i.imgur.com/e9ZjHOM.png)
 
 Export to .tmh format
-```wolfram
+```Mathematica
 FormatNumbers[{x_, 
    y_}] := (ToString[
      NumberForm[#1, {8, 8}, ExponentFunction -> (Null &)]] &) /@ {x, y}
@@ -45,7 +45,7 @@ ExportMesh[name_, mesh_] :=
       
 ExportMesh[MeshDirectory<>"annulus.tmh", mesh]
 ```
-```
+```python
 # Coordinates-467
 -0.8743	-1.2190
 . . .
@@ -69,7 +69,7 @@ solver = Poisson(problem_definition)
 solver.export_solution()
 ```
 Visualize with Mathematica
-```wolfram
+```Mathematica
 InterpAndShow[data_, object_] := 
  Module[{f = Interpolation[data, InterpolationOrder -> 1]}, 
   g = -Grad[f[xx, yy],{xx, yy}]; 
