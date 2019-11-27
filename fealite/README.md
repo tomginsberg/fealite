@@ -17,7 +17,7 @@ bmesh = BoundaryElementMeshJoin[
    ToBoundaryMesh[Rectangle[{-3, -3}, {3, 3}]]];
 air = {{0, 0}, {0, 2}};
 dielectric = {0, 1.25};
-mesh = ToElementMeshDefault[bmesh, "RegionMarker" -> Append[{#, 1} & /@ air, {dielectric, 2}]];
+mesh = ToElementMeshDefault[bmesh, (* Specify Markers *) Append[{#, 1} & /@ air, {dielectric, 2}]];
 ```
 View the mesh
 ```Mathematica
