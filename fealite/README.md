@@ -5,6 +5,7 @@
 #### Example 1: *Dielectric Cylindrical Shell in a Uniform Electric Field*
 Create the Mesh with Mathematica
 ```Mathematica
+ResourceFunction["FEMAddOnsInstall"][]
 Needs["NDSolve`FEM`"]
 Needs["FEMAddOns`"]
 
