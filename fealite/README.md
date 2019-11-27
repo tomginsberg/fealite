@@ -32,7 +32,7 @@ GraphicsRow[{mesh["Wireframe"],
 ![](https://i.imgur.com/wlg9WmG.png)
 
 Export to .tmh format
-```wolfram
+```Mathematica
 FormatNumbers[{x_, 
    y_}] := (ToString[
      NumberForm[#1, {8, 8}, ExponentFunction -> (Null &)]] &) /@ {x, y}
@@ -70,7 +70,7 @@ from fealite.poisson import DielectricObjectInUniformField, Poisson
 
 problem_definition =
      DielectricObjectInUniformField(mesh='meshes/annulus.tmh',
-     source_marker=2, sink_marker=6,
+     source_marker=2, sink_marker=4,
      dielectric_marker=2)
      
 solver = Poisson(problem_definition)
