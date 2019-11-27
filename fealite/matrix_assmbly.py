@@ -35,3 +35,4 @@ def assemble_global_vector(mesh: TriangleMesh, f: PoissonProblemDefinition.sourc
                 values.append(shp_fn.double_area / 6 * source_value)
 
     return sparse.coo_matrix((values, (rows, np.zeros_like(rows))), shape=(size, 1)).tolil()
+

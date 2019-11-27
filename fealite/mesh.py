@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 
 class TriangleMesh:
     def __init__(self, file_name: str):
-        self.file_name = realpath(file_name)
-        self.short_name = file_name.split('/')[-1][:-4]
         # coordinate lookup for vertex i
         self.coordinates: List[np.ndarray] = []
 
@@ -17,16 +15,17 @@ class TriangleMesh:
         self.mesh_elements: List[Tuple[int, int, int]] = []
         self.mesh_markers: List[int] = []
         self.mesh_shape_functions: List[LinearShapeFunction] = []
-        self.neighbors: List[List[int]] = []
 
         # list of line elements with boundary markers
         self.boundary_elements: List[Tuple[int, int]] = []
         self.boundary_markers: List[int] = []
-        self.boundary_master: Dict[int, int] = {}
+        self.boundary_dict: Dict[int, int] = {}
+
+        self.file_name = realpath(file_name)
+        self.short_name = self.file_name.split('/')[-1][:-4]
 
         self._parse_file(file_name)
         self._compute_shape_functions()
-        # self._compute_neighbors()
 
     def _parse_file(self, file_name: str):
         with open(file_name, 'r') as f:
@@ -47,13 +46,6 @@ class TriangleMesh:
         self.mesh_shape_functions = [LinearShapeFunction(*self.element_coords(element)) for element in
                                      self.mesh_elements]
 
-    def _compute_neighbors(self):
-        self.neighbors = [[] for _ in self.coordinates]
-        for element in self.mesh_elements:
-            for v1 in element:
-                for v2 in element:
-                    self.neighbors[v1].append(v2)
-
     def _add_coordinate(self, x: float, y: float):
         self.coordinates.append(np.array((x, y)))
 
@@ -64,8 +56,8 @@ class TriangleMesh:
     def _add_boundary_element(self, v1: int, v2: int, boundary_marker: int):
         self.boundary_elements.append((v1 - 1, v2 - 1))
         self.boundary_markers.append(boundary_marker)
-        self.boundary_master[v1 - 1] = boundary_marker
-        self.boundary_master[v2 - 1] = boundary_marker
+        self.boundary_dict[v1 - 1] = boundary_marker
+        self.boundary_dict[v2 - 1] = boundary_marker
 
     def element_coords(self, element: Tuple[int, int, int]) -> List[np.ndarray]:
         return [self.coordinates[i] for i in element]
@@ -92,7 +84,7 @@ class TriangleMesh:
                 plt.text(*sum([self.coordinates[i] for i in element]) / 2, f'{self.boundary_markers[mesh_id]}', size=12)
 
         if title == 'filename':
-            plt.title(self.file_name.split('/')[-1][:-4])
+            plt.title(self.short_name)
         if title is not None:
             plt.title(title)
         plt.axis('scaled')
@@ -108,6 +100,7 @@ class Meshes:
     annulus = 'meshes/annulus.tmh'
     cylinder_in_square_fine = 'meshes/cylinder-in-square-fine.tmh'
     heart = 'meshes/heart.tmh'
+    unit_disk = 'meshes/unit_disk.tmh'
 
 
 if __name__ == '__main__':

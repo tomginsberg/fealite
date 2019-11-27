@@ -1,13 +1,12 @@
-import numpy as np
-from typing import Union, Optional, Tuple
-
-from attr import dataclass
-
-from mesh import TriangleMesh
 from abc import ABC
 from math import pi
+from typing import Union, Optional, Tuple
+
+import numpy as np
 from scipy.sparse.linalg import spsolve
+
 import matrix_assmbly
+from mesh import Meshes, TriangleMesh
 
 
 class PoissonProblemDefinition(ABC):
@@ -61,7 +60,7 @@ class Poisson:
         self.solution = spsolve(self.K, self.b)
 
     def apply_dirichlet(self):
-        for v, marker in self.mesh.boundary_master.items():
+        for v, marker in self.mesh.boundary_dict.items():
             boundary_value = self.p(marker, self.mesh.coordinates[v])
             if boundary_value is not None:
                 for i in range(self.K.shape[0]):
@@ -83,18 +82,20 @@ class Poisson:
     def export_solution(self):
         export_path = f'solutions/{self.mesh.short_name}_{self.name}.txt'
         with open(export_path, 'w') as f:
-            f.write('{' + ','.join(['{' + ','.join([f'{c:f}' for c in cord]) + f',{z:f}}}' for cord, z in
-                                    zip(self.mesh.coordinates, self.solution)]) + '}')
+            f.write('\n'.join(['\t'.join([f'{c:f}' for c in cord]) + f'\t{z:f}' for cord, z in
+                               zip(self.mesh.coordinates, self.solution)]))
 
 
 class DielectricObjectInUniformField(PoissonProblemDefinition):
-    def __init__(self, mesh: Union[str, TriangleMesh], name: str = 'dielectric', positive=2, negative=4):
+    def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.cylinder_in_square, name: str = 'dielectric',
+                 source_marker: int = 2, sink_marker: int = 4, dielectric_marker: int = 2):
         super().__init__(mesh, name)
-        self.positive = positive
-        self.negative = negative
+        self.source_marker = source_marker
+        self.sink_marker = sink_marker
+        self.dielectric_marker = dielectric_marker
 
     def linear_material(self, element_marker: int) -> float:
-        if element_marker == 1:
+        if element_marker == self.dielectric_marker:
             return 1
         return 5
 
@@ -102,9 +103,9 @@ class DielectricObjectInUniformField(PoissonProblemDefinition):
         return 0
 
     def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        if boundary_marker == self.positive:
+        if boundary_marker == self.source_marker:
             return 1
-        elif boundary_marker == self.negative:
+        elif boundary_marker == self.sink_marker:
             return -1
         return None
 
@@ -113,6 +114,8 @@ class DielectricObjectInUniformField(PoissonProblemDefinition):
 
 
 class SampleProblem(PoissonProblemDefinition):
+    def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.unit_disk, name: str = 'laplace'):
+        super().__init__(mesh, name)
 
     def linear_material(self, element_marker: int) -> float:
         return 1
@@ -128,7 +131,7 @@ class SampleProblem(PoissonProblemDefinition):
 
 
 class InsulatingObject(PoissonProblemDefinition):
-    def __init__(self, mesh: Union[str, TriangleMesh], name: str = 'insulator'):
+    def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.cylinder_in_square, name: str = 'insulator'):
         super().__init__(mesh, name)
 
     def linear_material(self, element_marker: int) -> float:
@@ -145,12 +148,12 @@ class InsulatingObject(PoissonProblemDefinition):
 
 
 class DielectricHeart(DielectricObjectInUniformField):
-    def __init__(self, mesh: Union[str, TriangleMesh], name: str = 'dielectric'):
-        super().__init__(mesh, name, positive=1, negative=3)
+    def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.heart, name: str = 'dielectric'):
+        super().__init__(mesh, name, source_marker=1, sink_marker=3)
 
 
 class Airfoil(PoissonProblemDefinition):
-    def __init__(self, mesh: Union[str, TriangleMesh], name: str = 'euler-flow'):
+    def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.airfoil, name: str = 'euler-flow'):
         super().__init__(mesh, name)
 
     def linear_material(self, element_marker: int) -> float:
@@ -170,14 +173,6 @@ class Airfoil(PoissonProblemDefinition):
         pass
 
 
-class Meshes:
-    cylinder_in_square = 'meshes/cylinder-in-square.tmh'
-    airfoil = 'meshes/airfoil.tmh'
-    annulus = 'meshes/annulus.tmh'
-    cylinder_in_square_fine = 'meshes/cylinder-in-square-fine.tmh'
-    heart = 'meshes/heart.tmh'
-
-
 if __name__ == '__main__':
-    problem = Poisson(Airfoil(Meshes.airfoil))
+    problem = Poisson(DielectricObjectInUniformField(Meshes.annulus))
     problem.export_solution()
