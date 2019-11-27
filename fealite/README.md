@@ -5,9 +5,9 @@
 #### Example 1: *Dielectric Cylindrical Shell in a Uniform Electric Field*
 Create the Mesh with Mathematica
 ```Mathematica
-ResourceFunction["FEMAddOnsInstall"][]
-Needs["NDSolve`FEM`"]
-Needs["FEMAddOns`"]
+(* If needed *)
+(* ResourceFunction["FEMAddOnsInstall"][] *)
+<< MeshTools.wl
 
 bmesh = BoundaryElementMeshJoin[
    ToBoundaryMesh[Annulus[{0, 0}, {1, 1.5}], 
@@ -17,43 +17,19 @@ bmesh = BoundaryElementMeshJoin[
    ToBoundaryMesh[Rectangle[{-3, -3}, {3, 3}]]];
 air = {{0, 0}, {0, 2}};
 dielectric = {0, 1.25};
-mesh = ToElementMesh[bmesh, 
-   "RegionMarker" -> Append[{#, 1} & /@ air, {dielectric, 2}], 
-   "MeshOrder" -> 1, "NodeReordering" -> True];
+mesh = ToElementMeshDefault[bmesh, "RegionMarker" -> Append[{#, 1} & /@ air, {dielectric, 2}]];
 ```
 View the mesh
 ```Mathematica
-GraphicsRow[{mesh["Wireframe"], 
-  mesh["Wireframe"["MeshElement" -> "BoundaryElements", 
-    "MeshElementMarkerStyle" -> Red]], 
-  mesh["Wireframe"[
-    "MeshElementStyle" -> 
-     FaceForm /@ ColorData["AtlanticColors"] /@ {1/2, 1/4}]]}]
+MeshInspect[mesh]
 ```
 ![](https://i.imgur.com/wlg9WmG.png)
 
 Export to .tmh format
 ```Mathematica
-FormatNumbers[{x_, 
-   y_}] := (ToString[
-     NumberForm[#1, {8, 8}, ExponentFunction -> (Null &)]] &) /@ {x, y}
-     
-ExportMesh[name_, mesh_] := 
- Export[name, 
-  Join[{"# Coordinates-" <> ToString[Length[mesh["Coordinates"]]]}, 
-   FormatNumbers /@ 
-    mesh["Coordinates"], {"# Triangle Elements-" <> 
-     ToString[Length[mesh["Coordinates"]]]}, 
-   Flatten /@ 
-    Transpose[{mesh["MeshElements"][[1, 1]], 
-      mesh["MeshElements"][[1, 2]]}], {"# Boundary Elements-" <> 
-     ToString[Length[mesh["BoundaryElements"][[1, 2]]]]}, 
-   Flatten /@ 
-    Transpose[{mesh["BoundaryElements"][[1, 1]], 
-      mesh["BoundaryElements"][[1, 2]]}]], "Table"]
-      
 ExportMesh[MeshDirectory<>"annulus.tmh", mesh]
 ```
+The exported file looks like the following
 ```
 # Coordinates-467
 -0.8743	-1.2190
@@ -79,15 +55,6 @@ solver.export_solution()
 ```
 Visualize with Mathematica
 ```Mathematica
-InterpAndShow[data_, object_] := 
- Module[{f = Interpolation[data, InterpolationOrder -> 1]}, 
-  g = -Grad[f[xx, yy],{xx, yy}]; 
-  Show[ContourPlot[
-    f[xx, yy], {xx, yy} \[Element] Rectangle[{-3, -3}, {3, 3}], 
-    ColorFunction -> "Pastel", PlotLegends -> Automatic], 
-   Graphics[{Opacity[0], EdgeForm[Thickness[.01/5]], object}], 
-   StreamPlot[g, {xx, yy} \[Element] Rectangle[{-3, -3}, {3, 3}]]]]
-   
 InterpAndShow[
   Import[
     SolutionDirectory<>"annulus_dielectric.txt", "Data"
