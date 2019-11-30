@@ -38,7 +38,7 @@ The exported file looks like the following
 36	37	38	1
 . . .
 # Boundary Elements-164
-317	318	6
+317	318	6  2
 . . .
 ```
 Implement or choose a premade `PoissonProblemDefinition`
