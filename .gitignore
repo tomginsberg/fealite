@@ -477,3 +477,24 @@ TSWLatexianTemp*
 !.vscode/launch.json
 !.vscode/extensions.json
 
+.idea/.gitignore
+.idea/inspectionProfiles/
+.idea/misc.xml
+.idea/modules.xml
+.idea/motorsim.iml
+.idea/other.xml
+.idea/vcs.xml
+bldc/
+fealite/.idea/.gitignore
+fealite/.idea/dictionaries/
+fealite/.idea/fealite.iml
+fealite/.idea/inspectionProfiles/
+fealite/.idea/misc.xml
+fealite/.idea/modules.xml
+fealite/.idea/vcs.xml
+fealite/meshes/airfoil.tmh
+fealite/meshes/annulus.tmh
+fealite/solutions/airfoil_euler-flow.txt
+fealite/solutions/annulus_dielectric.txt
+fealite/solutions/cylinder-in-square_insulator.txt
+requirements.txt

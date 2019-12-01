@@ -20,9 +20,7 @@ boundaryElements =
 
 meshMarkers = CountDistinct[meshElements[[2]]];
 
-colors = {White, LightBlue, LightRed, LightGray, LightOrange, LightPurple,
-   LightGreen, LightBrown}~Join~
-  If[meshMarkers > 8, RandomColor[meshMarkers - 8], {}]
+colors = ColorData["DarkRainbow"]/@Subdivide[meshMarkers]
 
 mesh = ToElementMesh["Coordinates" -> coords,
    "MeshElements" -> {meshElements},
