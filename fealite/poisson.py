@@ -2,8 +2,6 @@ from abc import ABC
 from math import pi
 from typing import Union, Optional, Tuple
 
-import bldc.bldc as bldc
-
 import numpy as np
 from scipy.sparse.linalg import spsolve
 from scipy.optimize import fsolve
@@ -112,7 +110,7 @@ class NonLinearPoissonProblemDefinition(ABC):
         raise NotImplementedError
 
 
-class NonlinearPoisson:
+class NonLinearPoisson:
     """
         Assembles the non linear FEA system for the general Poisson problem
         - ∇·( alpha(material, norm(∇phi)) ∇phi(x,y) ) = f(x,y; material)
