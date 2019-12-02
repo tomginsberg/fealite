@@ -1,7 +1,7 @@
 from typing import Union, Optional
 import numpy as np
 from mesh import TriangleMesh, Meshes
-from poisson import PoissonProblemDefinition, Poisson
+from poisson import PoissonProblemDefinition, LinearPoisson
 
 
 class DielectricObjectInUniformField(PoissonProblemDefinition):
@@ -12,7 +12,7 @@ class DielectricObjectInUniformField(PoissonProblemDefinition):
         self.sink_marker = sink_marker
         self.dielectric_marker = dielectric_marker
 
-    def linear_material(self, element_marker: int) -> float:
+    def material(self, element_marker: int) -> float:
         if element_marker == self.dielectric_marker:
             return 1
         return 5
@@ -35,7 +35,7 @@ class SampleProblem(PoissonProblemDefinition):
     def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.unit_disk, name: str = 'laplace'):
         super().__init__(mesh, name)
 
-    def linear_material(self, element_marker: int) -> float:
+    def material(self, element_marker: int) -> float:
         return 1
 
     def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
@@ -52,7 +52,7 @@ class InsulatingObject(PoissonProblemDefinition):
     def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.cylinder_in_square, name: str = 'insulator'):
         super().__init__(mesh, name)
 
-    def linear_material(self, element_marker: int) -> float:
+    def material(self, element_marker: int) -> float:
         return 1
 
     def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
@@ -74,7 +74,7 @@ class Airfoil(PoissonProblemDefinition):
     def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.airfoil, name: str = 'euler-flow'):
         super().__init__(mesh, name)
 
-    def linear_material(self, element_marker: int) -> float:
+    def material(self, element_marker: int) -> float:
         return 1
 
     def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
@@ -92,5 +92,5 @@ class Airfoil(PoissonProblemDefinition):
 
 
 if __name__ == '__main__':
-    problem = Poisson(DielectricObjectInUniformField(Meshes.annulus))
+    problem = LinearPoisson(DielectricObjectInUniformField(Meshes.annulus))
     problem.export_solution()

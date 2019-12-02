@@ -4,113 +4,56 @@ from typing import Union, Optional, Tuple
 
 import numpy as np
 from scipy.sparse.linalg import spsolve
+from scipy.sparse import lil_matrix
 from scipy.optimize import fsolve
-
+from problem_definitions import PoissonProblemDefinition, NonLinearPoissonProblemDefinition
 import matrix_assmbly
+from matrix_assmbly import NonLinearSystem, apply_neumann, apply_dirichlet
 from mesh import TriangleMesh
 
 EPS0 = 8.854e-12
 MU0 = 4e-7 * pi
 
 
-class PoissonProblemDefinition(ABC):
-
-    def __init__(self, mesh: Union[str, TriangleMesh], name: str):
-        if type(mesh) is str:
-            self.mesh = TriangleMesh(mesh)
-        else:
-            self.mesh = mesh
+class Poisson(ABC):
+    def __init__(self, definition: Union[PoissonProblemDefinition, NonLinearPoissonProblemDefinition],
+                 mesh: TriangleMesh, name: str):
         self.name = name
+        self.mesh = mesh
+        self.alpha = definition.material
+        self.f = definition.source
+        self.p = definition.dirichlet_boundary
+        self.q = definition.neumann_boundary
+        self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh, self.alpha)
+        self.b = matrix_assmbly.assemble_global_vector(self.mesh, self.f, self.K.shape[0])
+        apply_dirichlet(self.mesh, self.K, self.b, self.p)
+        apply_neumann(self.mesh, self.b, self.q)
 
-    def linear_material(self, element_marker: int) -> float:
+    def _export_solution(self, solution):
+        export_path = f'solutions/{self.mesh.short_name}_{self.name}.txt'
+        with open(export_path, 'w') as f:
+            f.write('\n'.join(['\t'.join([f'{c:f}' for c in cord]) + f'\t{z:f}' for cord, z in
+                               zip(self.mesh.coordinates, solution)]))
+
+    def solve_and_export(self):
         raise NotImplementedError
 
-    def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        raise NotImplementedError
 
-    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        raise NotImplementedError
-
-    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        raise NotImplementedError
-
-
-def distance(c1: Tuple[float, float], c2: Tuple[float, float]) -> float:
-    return np.sqrt((c1[0] - c2[0]) ** 2 + (c1[1] - c2[1]) ** 2)
-
-
-class Poisson:
+class LinearPoisson(Poisson):
     """
     Assembles the linear FEA system for the general Poisson problem  - ∇·( alpha(material) ∇phi(x,y) ) = f(x,y; material)
     alpha is a spatial function only of the material properties (i.e ε)
     f is a source function of a material and coordinate (i.e ρ)
     """
 
-    def __init__(self, definition: PoissonProblemDefinition):
-        self.name = definition.name
-        self.mesh = definition.mesh
-        self.alpha = definition.linear_material
-        self.f = definition.source
-        self.p = definition.dirichlet_boundary
-        self.q = definition.neumann_boundary
-        self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh,
-                                                                 self.alpha)
-        self.b = matrix_assmbly.assemble_global_vector(self.mesh, self.f, self.K.shape[0])
-        self.apply_dirichlet()
-        self.apply_neumann()
-        self.K = self.K.tocsc()
-        self.solution = spsolve(self.K, self.b)
+    def __init__(self, definition: PoissonProblemDefinition, mesh: TriangleMesh, name: str):
+        super().__init__(definition, mesh, name)
 
-    def apply_dirichlet(self):
-        for v, marker in self.mesh.boundary_dict.items():
-            boundary_value = self.p(marker, self.mesh.coordinates[v])
-            if boundary_value is not None:
-                for i in range(self.K.shape[0]):
-                    self.b[i, 0] -= self.K[i, v] * boundary_value
-                    self.K[i, v] = 0
-                self.K[v] = 0
-                self.K[v, v] = 1
-                self.b[v, 0] = boundary_value
-
-    def apply_neumann(self):
-        for element, marker in zip(self.mesh.boundary_elements, self.mesh.boundary_markers):
-            # This could also be made more accurate, but not that important
-            el_length = distance(*[self.mesh.coordinates[i] for i in element])
-            for e_id in element:
-                neumann_value = self.q(boundary_marker=marker, coordinate=self.mesh.coordinates[e_id])
-                if neumann_value is not None:
-                    self.b[e_id] += el_length / 2 * neumann_value
-
-    def export_solution(self):
-        export_path = f'solutions/{self.mesh.short_name}_{self.name}.txt'
-        with open(export_path, 'w') as f:
-            f.write('\n'.join(['\t'.join([f'{c:f}' for c in cord]) + f'\t{z:f}' for cord, z in
-                               zip(self.mesh.coordinates, self.solution)]))
+    def solve_and_export(self):
+        super()._export_solution(spsolve(self.K.tocsc(), self.b))
 
 
-class NonLinearPoissonProblemDefinition(ABC):
-    def __init__(self, mesh: Union[str, TriangleMesh], name: str = 'nonlinear'):
-        if type(mesh) is str:
-            self.mesh = TriangleMesh(mesh)
-        else:
-            self.mesh = mesh
-        self.name = name
-
-    def non_linear_material(self, element_marker: int, coordinate: np.ndarray, norm_grad_phi: Optional[float] = None,
-                            div: bool = False) -> Optional[float]:
-        raise NotImplementedError
-
-    def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        raise NotImplementedError
-
-    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        raise NotImplementedError
-
-    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        raise NotImplementedError
-
-
-class NonLinearPoisson:
+class NonLinearPoisson(Poisson):
     """
         Assembles the non linear FEA system for the general Poisson problem
         - ∇·( alpha(material, norm(∇phi)) ∇phi(x,y) ) = f(x,y; material)
@@ -118,17 +61,11 @@ class NonLinearPoisson:
         f is a source function of a material and coordinate (i.e ρ)
         """
 
-    def __init__(self, definition: NonLinearPoissonProblemDefinition):
-        self.mesh = definition.mesh
-        self.alpha = definition.non_linear_material
-        self.f = definition.source
-        self.p = definition.dirichlet_boundary
-        self.q = definition.neumann_boundary
-        self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh, self.alpha)
-        self.b = matrix_assmbly.assemble_global_vector(self.mesh, self.f, self.K.shape[0])
-        self.x0 = spsolve(self.K, self.b) #x0 is our first approximation of A
+    def __init__(self, definition: NonLinearPoissonProblemDefinition, mesh: TriangleMesh, name: str):
+        super().__init__(definition, mesh, name)
 
-        self.fxn_array = matrix_assmbly \
-            .assemble_global_stiffness_matrix_nonlinear(self.mesh, self.alpha, self.b, self.x0)
-        # give approximate solution using constant value for linear material parameter
-        self.solution = fsolve(self.fxn_array, self.x0)
+    def solve_and_export(self):
+        a_0 = spsolve(self.K, self.b)
+        n_sys = NonLinearSystem(self.mesh, self.alpha, np.array(self.b.todense()).transpose().squeeze())
+        solution = fsolve(n_sys.sys_eval, a_0, fprime=n_sys.jacobian)
+        super()._export_solution(solution)

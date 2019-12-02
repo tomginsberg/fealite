@@ -59,7 +59,7 @@ class TriangleMesh:
         self.boundary_dict[v1 - 1] = boundary_marker
         self.boundary_dict[v2 - 1] = boundary_marker
 
-    def element_coords(self, element: Tuple[int, int, int]) -> List[np.ndarray]:
+    def element_coords(self, element: Tuple[int, ...]) -> List[np.ndarray]:
         return [self.coordinates[i] for i in element]
 
     def render_mesh(self, input_file=None, output_file=None):
