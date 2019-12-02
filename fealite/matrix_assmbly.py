@@ -1,6 +1,7 @@
 from scipy import sparse
 from mesh import TriangleMesh
 from poisson import PoissonProblemDefinition
+from poisson import NonLinearPoissonProblemDefinition
 import numpy as np
 
 
@@ -24,7 +25,7 @@ def assemble_global_stiffness_matrix(mesh: TriangleMesh,
 
 
 def assemble_global_stiffness_matrix_nonlinear(mesh: TriangleMesh,
-                                               alpha: PoissonProblemDefinition.linear_material,
+                                               alpha: NonLinearPoissonProblemDefinition.non_linear_material,
                                                b: sparse.lil_matrix):
     # want to return function of A = [A_1, A_2, ... A_n] where n is number of nodes
     # not stiffness matrix anymore, just the functions necessary for solving recursively
@@ -40,7 +41,7 @@ def assemble_global_stiffness_matrix_nonlinear(mesh: TriangleMesh,
                     rows.append(element[i])
                     cols.append(element[j])
                     values.append(
-                        shp_fn.stiffness_matrix[i, j] * alpha(marker)(a[j]))  # alpha returns reluctance as fxn of A_j
+                        shp_fn.stiffness_matrix[i, j] * alpha(marker, DIVGRADPHI))
                     if i != j:
                         rows.append(element[j])
                         cols.append(element[i])

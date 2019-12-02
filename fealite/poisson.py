@@ -2,6 +2,8 @@ from abc import ABC
 from math import pi
 from typing import Union, Optional, Tuple
 
+import bldc.bldc as bldc
+
 import numpy as np
 from scipy.sparse.linalg import spsolve
 from scipy.optimize import fsolve
@@ -96,7 +98,7 @@ class NonLinearPoissonProblemDefinition(ABC):
             self.mesh = mesh
         self.name = name
 
-    def non_linear_material(self, element_marker: int, coordinate: np.ndarray, norm_grad_phi: float,
+    def non_linear_material(self, element_marker: int, norm_grad_phi: float,
                             div: bool = False) -> Optional[float]:
         raise NotImplementedError
 
@@ -124,12 +126,11 @@ class NonlinearPoisson:
         self.f = definition.source
         self.p = definition.dirichlet_boundary
         self.q = definition.neumann_boundary
-        self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh, self.alpha)
+        self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh, 1) #use 1 as arbitrary, this K exists just to get first estimate for solution
         self.b = matrix_assmbly.assemble_global_vector(self.mesh, self.f, self.K.shape[0])
 
         self.fxn_array = matrix_assmbly \
             .assemble_global_stiffness_matrix_nonlinear(self.mesh, self.alpha, self.b)
         self.x0 = spsolve(self.K, self.b)
 
-        # give approximate solution using constant value for linear material parameter
         self.solution = fsolve(self.fxn_array, self.x0)
