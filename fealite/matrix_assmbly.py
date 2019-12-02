@@ -55,16 +55,16 @@ def assemble_global_stiffness_matrix_nonlinear(mesh: TriangleMesh,
 
 
 def local_properties(curr: np.ndarray, element: Tuple[int, int, int], marker, shp_fn,
-                     alpha: NonLinearPoissonProblemDefinition.non_linear_material) -> Tuple[
-                                                                                List[float], float, float, np.ndarray]:
-    a_ijk = [curr[i] for i in element]
+                     alpha: NonLinearPoissonProblemDefinition.non_linear_material) -> Tuple[np.ndarray, float, float,
+                                                                                            np.ndarray]:
+    a_ijk = np.array([[curr[i] for i in element]])
     # compute field approximation on this element
     field2norm = np.linalg.norm([np.dot(shp_fn.div_N_ijk__x, a_ijk), np.dot(shp_fn.div_N_ijk__x, a_ijk)])
     # compute non linear material property for this field strength
     alpha_field = alpha(marker, field2norm)
-    # compute the gradient of the non linear material property for this field strength
+    # compute the gradient of the non linear material property for this field strength w respect to the node values
     grad_alpha = alpha(marker, field2norm, div=True) * (
-            (shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y) + np.dot((shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y),
+            (shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y) * np.dot((shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y),
                                                                  a_ijk)) / ((shp_fn.double_area ** 2) * field2norm)
     return a_ijk, field2norm, alpha_field, grad_alpha
 
@@ -77,18 +77,20 @@ def assemble_jacobian(mesh: TriangleMesh, alpha: NonLinearPoissonProblemDefiniti
 
         # compute field approximation on this element
         a_ijk, field2norm, alpha_field, grad_alpha = local_properties(curr, element, marker, shp_fn, alpha)
-        local_jacobian = alpha_field * np.matmul(shp_fn.stiffness_matrix, np.array([a_ijk]).transpose())
+        local_jacobian = alpha_field * np.matmul(np.matmul(shp_fn.stiffness_matrix, a_ijk.transpose()),
+                                                 grad_alpha) * np.dot(
+            shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y, a_ijk.transpose()) + shp_fn.stiffness_matrix * alpha_field
 
         n = len(element)
         for i in range(n):
             for j in range(i, n):
                 rows.append(element[i])
                 cols.append(element[j])
-                values.append(shp_fn.stiffness_matrix[i, j] * alpha(marker))
+                values.append(local_jacobian[i, j])
                 if i != j:
                     rows.append(element[j])
                     cols.append(element[i])
-                    values.append(shp_fn.stiffness_matrix[j, i] * alpha(marker))
+                    values.append(local_jacobian[j, i])
 
     return sparse.coo_matrix((values, (rows, cols))).tolil()
 
