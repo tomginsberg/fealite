@@ -96,7 +96,7 @@ class NonLinearPoissonProblemDefinition(ABC):
             self.mesh = mesh
         self.name = name
 
-    def non_linear_material(self, element_marker: int, coordinate: np.ndarray, norm_grad_phi: float,
+    def non_linear_material(self, element_marker: int, coordinate: np.ndarray, norm_grad_phi: Optional[float] = None,
                             div: bool = False) -> Optional[float]:
         raise NotImplementedError
 
