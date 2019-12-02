@@ -16,10 +16,9 @@ MU0 = 4e-7 * pi
 
 
 class Poisson(ABC):
-    def __init__(self, definition: Union[PoissonProblemDefinition, NonLinearPoissonProblemDefinition],
-                 mesh: TriangleMesh, name: str):
-        self.name = name
-        self.mesh = mesh
+    def __init__(self, definition: Union[PoissonProblemDefinition, NonLinearPoissonProblemDefinition]):
+        self.name = definition.name
+        self.mesh = definition.mesh
         self.alpha = definition.material
         self.f = definition.source
         self.p = definition.dirichlet_boundary
@@ -46,8 +45,8 @@ class LinearPoisson(Poisson):
     f is a source function of a material and coordinate (i.e ρ)
     """
 
-    def __init__(self, definition: PoissonProblemDefinition, mesh: TriangleMesh, name: str):
-        super().__init__(definition, mesh, name)
+    def __init__(self, definition: PoissonProblemDefinition):
+        super().__init__(definition)
 
     def solve_and_export(self):
         super()._export_solution(spsolve(self.K.tocsc(), self.b))
@@ -61,11 +60,11 @@ class NonLinearPoisson(Poisson):
         f is a source function of a material and coordinate (i.e ρ)
         """
 
-    def __init__(self, definition: NonLinearPoissonProblemDefinition, mesh: TriangleMesh, name: str):
-        super().__init__(definition, mesh, name)
+    def __init__(self, definition: NonLinearPoissonProblemDefinition):
+        super().__init__(definition)
 
     def solve_and_export(self):
         a_0 = spsolve(self.K, self.b)
-        n_sys = NonLinearSystem(self.mesh, self.alpha, np.array(self.b.todense()).transpose().squeeze())
+        n_sys = NonLinearSystem(self.mesh, self.alpha, self.p, self.q, np.array(self.b.todense()).transpose().squeeze())
         solution = fsolve(n_sys.sys_eval, a_0, fprime=n_sys.jacobian)
         super()._export_solution(solution)

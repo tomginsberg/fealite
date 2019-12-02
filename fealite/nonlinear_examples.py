@@ -50,3 +50,4 @@ class TestProblem(NonLinearPoissonProblemDefinition):
 
 if __name__ == '__main__':
     problem = NonLinearPoisson(TestProblem(Meshes.annulus))
+    problem.solve_and_export()
