@@ -27,7 +27,7 @@ def assemble_global_stiffness_matrix(mesh: TriangleMesh,
 
 def assemble_global_stiffness_matrix_nonlinear(mesh: TriangleMesh,
                                                alpha: NonLinearPoissonProblemDefinition.non_linear_material,
-                                               b: sparse.lil_matrix):
+                                               b: sparse.lil_matrix, curr: np.array):
     # want to return function of A = [A_1, A_2, ... A_n] where n is number of nodes
     # not stiffness matrix anymore, just the functions necessary for solving recursively
     rows, cols, values = [], [], []
@@ -36,17 +36,18 @@ def assemble_global_stiffness_matrix_nonlinear(mesh: TriangleMesh,
 
         for element, shp_fn, marker in zip(mesh.mesh_elements, mesh.mesh_shape_functions,
                                            mesh.mesh_markers):
+            local_props = local_properties(curr, element, marker, shp_fn, alpha)
             n = len(element)
             for i in range(n):
                 for j in range(i, n):
                     rows.append(element[i])
                     cols.append(element[j])
                     values.append(
-                        shp_fn.stiffness_matrix[i, j] * alpha(marker, DIVGRADPHI))
+                        shp_fn.stiffness_matrix[i, j] * local_props[2])
                     if i != j:
                         rows.append(element[j])
                         cols.append(element[i])
-                        values.append(shp_fn.stiffness_matrix[j, i] * alpha(marker))
+                        values.append(shp_fn.stiffness_matrix[j, i] * local_props[2])
 
         matrix_rep = sparse.coo_matrix((values, (rows, cols))).tolil()
         return np.subtract(np.matmul(matrix_rep, a), b)

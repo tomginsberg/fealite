@@ -128,10 +128,9 @@ class NonlinearPoisson:
         self.q = definition.neumann_boundary
         self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh, self.alpha)
         self.b = matrix_assmbly.assemble_global_vector(self.mesh, self.f, self.K.shape[0])
+        self.x0 = spsolve(self.K, self.b) #x0 is our first approximation of A
 
         self.fxn_array = matrix_assmbly \
-            .assemble_global_stiffness_matrix_nonlinear(self.mesh, self.alpha, self.b)
-        self.x0 = spsolve(self.K, self.b)
-
+            .assemble_global_stiffness_matrix_nonlinear(self.mesh, self.alpha, self.b, self.x0)
         # give approximate solution using constant value for linear material parameter
         self.solution = fsolve(self.fxn_array, self.x0)
