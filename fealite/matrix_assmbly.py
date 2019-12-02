@@ -1,7 +1,8 @@
 from scipy import sparse
+from typing import Tuple, List
+
 from mesh import TriangleMesh
-from poisson import PoissonProblemDefinition
-from poisson import NonLinearPoissonProblemDefinition
+from poisson import PoissonProblemDefinition, NonLinearPoissonProblemDefinition
 import numpy as np
 
 
@@ -51,6 +52,45 @@ def assemble_global_stiffness_matrix_nonlinear(mesh: TriangleMesh,
         return np.subtract(np.matmul(matrix_rep, a), b)
 
     return fxn
+
+
+def local_properties(curr: np.ndarray, element: Tuple[int, int, int], marker, shp_fn,
+                     alpha: NonLinearPoissonProblemDefinition.non_linear_material) -> Tuple[
+                                                                                List[float], float, float, np.ndarray]:
+    a_ijk = [curr[i] for i in element]
+    # compute field approximation on this element
+    field2norm = np.linalg.norm([np.dot(shp_fn.div_N_ijk__x, a_ijk), np.dot(shp_fn.div_N_ijk__x, a_ijk)])
+    # compute non linear material property for this field strength
+    alpha_field = alpha(marker, field2norm)
+    # compute the gradient of the non linear material property for this field strength
+    grad_alpha = alpha(marker, field2norm, div=True) * (
+            (shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y) + np.dot((shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y),
+                                                                 a_ijk)) / ((shp_fn.double_area ** 2) * field2norm)
+    return a_ijk, field2norm, alpha_field, grad_alpha
+
+
+def assemble_jacobian(mesh: TriangleMesh, alpha: NonLinearPoissonProblemDefinition.non_linear_material,
+                      curr: np.ndarray):
+    rows, cols, values = [], [], []
+    for element, shp_fn, marker in zip(mesh.mesh_elements, mesh.mesh_shape_functions,
+                                       mesh.mesh_markers):
+
+        # compute field approximation on this element
+        a_ijk, field2norm, alpha_field, grad_alpha = local_properties(curr, element, marker, shp_fn, alpha)
+        local_jacobian = alpha_field * np.matmul(shp_fn.stiffness_matrix, np.array([a_ijk]).transpose())
+
+        n = len(element)
+        for i in range(n):
+            for j in range(i, n):
+                rows.append(element[i])
+                cols.append(element[j])
+                values.append(shp_fn.stiffness_matrix[i, j] * alpha(marker))
+                if i != j:
+                    rows.append(element[j])
+                    cols.append(element[i])
+                    values.append(shp_fn.stiffness_matrix[j, i] * alpha(marker))
+
+    return sparse.coo_matrix((values, (rows, cols))).tolil()
 
 
 def assemble_global_vector(mesh: TriangleMesh, f: PoissonProblemDefinition.source, size: int) -> sparse.lil_matrix:
