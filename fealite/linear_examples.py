@@ -93,4 +93,4 @@ class Airfoil(PoissonProblemDefinition):
 
 if __name__ == '__main__':
     problem = LinearPoisson(DielectricObjectInUniformField(Meshes.annulus))
-    problem.export_solution()
+    problem.solve_and_export()

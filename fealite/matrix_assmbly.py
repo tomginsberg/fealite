@@ -100,6 +100,7 @@ class NonLinearSystem:
         return k.dot(curr) - b
 
     def jacobian(self, curr) -> np.ndarray:
+        # Todo: think about this
         rows, cols, values = [], [], []
         for element, shp_fn, marker in zip(self.mesh.mesh_elements, self.mesh.mesh_shape_functions,
                                            self.mesh.mesh_markers):

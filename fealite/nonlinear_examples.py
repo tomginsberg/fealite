@@ -3,7 +3,7 @@ import numpy as np
 from mesh import TriangleMesh, Meshes
 from poisson import NonLinearPoissonProblemDefinition, NonLinearPoisson
 from math import e
-import sys
+# import sys
 # sys.path.append("..\\")
 from bldc import bldc
 
