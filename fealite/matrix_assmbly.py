@@ -67,7 +67,7 @@ def local_properties(curr: np.ndarray, element: Tuple[int, int, int], marker, sh
     grad_alpha = alpha(marker, field2norm, div=True) * (
             (shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y) * np.dot((shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y),
                                                                  a_ijk.transpose())) / (
-                             (shp_fn.double_area ** 2) * field2norm)
+                         (shp_fn.double_area ** 2) * field2norm)
     return a_ijk, field2norm, alpha_field, grad_alpha
 
 
