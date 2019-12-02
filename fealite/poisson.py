@@ -7,10 +7,11 @@ from scipy.sparse.linalg import spsolve
 from scipy.optimize import fsolve
 
 import matrix_assmbly
-from mesh import Meshes, TriangleMesh
+from mesh import TriangleMesh
 
 EPS0 = 8.854e-12
 MU0 = 4e-7 * pi
+
 
 class PoissonProblemDefinition(ABC):
 
@@ -40,7 +41,7 @@ def distance(c1: Tuple[float, float], c2: Tuple[float, float]) -> float:
 
 class Poisson:
     """
-    Assembles the FEA matrix for the general Poisson problem  - ∇·( alpha(material) ∇phi(x,y) ) = f(x,y; material)
+    Assembles the linear FEA system for the general Poisson problem  - ∇·( alpha(material) ∇phi(x,y) ) = f(x,y; material)
     alpha is a spatial function only of the material properties (i.e ε)
     f is a source function of a material and coordinate (i.e ρ)
     """
@@ -87,93 +88,6 @@ class Poisson:
                                zip(self.mesh.coordinates, self.solution)]))
 
 
-class DielectricObjectInUniformField(PoissonProblemDefinition):
-    def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.cylinder_in_square, name: str = 'dielectric',
-                 source_marker: int = 2, sink_marker: int = 4, dielectric_marker: int = 2):
-        super().__init__(mesh, name)
-        self.source_marker = source_marker
-        self.sink_marker = sink_marker
-        self.dielectric_marker = dielectric_marker
-
-    def linear_material(self, element_marker: int) -> float:
-        if element_marker == self.dielectric_marker:
-            return 1
-        return 5
-
-    def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        return 0
-
-    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        if boundary_marker == self.source_marker:
-            return 1
-        elif boundary_marker == self.sink_marker:
-            return -1
-        return None
-
-    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        return None
-
-
-class SampleProblem(PoissonProblemDefinition):
-    def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.unit_disk, name: str = 'laplace'):
-        super().__init__(mesh, name)
-
-    def linear_material(self, element_marker: int) -> float:
-        return 1
-
-    def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        return 0
-
-    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        return coordinate[0] * coordinate[1]
-
-    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        return None
-
-
-class InsulatingObject(PoissonProblemDefinition):
-    def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.cylinder_in_square, name: str = 'insulator'):
-        super().__init__(mesh, name)
-
-    def linear_material(self, element_marker: int) -> float:
-        return 1
-
-    def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        return 1 if element_marker == 2 else None
-
-    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        return -np.log(np.linalg.norm(coordinate)) / 2 - 1 / 4 if np.linalg.norm(coordinate) > 2 else None
-
-    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        return None
-
-
-class DielectricHeart(DielectricObjectInUniformField):
-    def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.heart, name: str = 'dielectric'):
-        super().__init__(mesh, name, source_marker=1, sink_marker=3)
-
-
-class Airfoil(PoissonProblemDefinition):
-    def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.airfoil, name: str = 'euler-flow'):
-        super().__init__(mesh, name)
-
-    def linear_material(self, element_marker: int) -> float:
-        return 1
-
-    def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        return None
-
-    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        if boundary_marker == 4:
-            return 1
-        if boundary_marker == 2:
-            return -1
-        return None
-
-    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        pass
-
-
 class NonLinearPoissonProblemDefinition(ABC):
     def __init__(self, mesh: Union[str, TriangleMesh], name: str = 'nonlinear'):
         if type(mesh) is str:
@@ -182,7 +96,8 @@ class NonLinearPoissonProblemDefinition(ABC):
             self.mesh = mesh
         self.name = name
 
-    def non_linear_material(self, element_marker: int, coordinate: np.ndarray, field_strength: float) ->:
+    def non_linear_material(self, element_marker: int, coordinate: np.ndarray, norm_grad_phi: float,
+                            div: bool = False) -> Optional[float]:
         raise NotImplementedError
 
     def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
@@ -196,18 +111,25 @@ class NonLinearPoissonProblemDefinition(ABC):
 
 
 class NonlinearPoisson:
+    """
+        Assembles the non linear FEA system for the general Poisson problem
+        - ∇·( alpha(material, norm(∇phi)) ∇phi(x,y) ) = f(x,y; material)
+        alpha is a spatial function only of the material properties (i.e ε)
+        f is a source function of a material and coordinate (i.e ρ)
+        """
+
     def __init__(self, definition: NonLinearPoissonProblemDefinition):
         self.mesh = definition.mesh
-        self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh, 1)
-        self.b = matrix_assmbly.assemble_global_vector(self.mesh, PoissonProblemDefinition.source, self.K.shape[0])
+        self.alpha = definition.non_linear_material
+        self.f = definition.source
+        self.p = definition.dirichlet_boundary
+        self.q = definition.neumann_boundary
+        self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh, self.alpha)
+        self.b = matrix_assmbly.assemble_global_vector(self.mesh, self.f, self.K.shape[0])
+
         self.fxn_array = matrix_assmbly \
-            .assemble_global_stiffness_matrix_nonlinear(self.mesh, PoissonProblemDefinition.linear_material, self.b)
+            .assemble_global_stiffness_matrix_nonlinear(self.mesh, self.alpha, self.b)
         self.x0 = spsolve(self.K, self.b)
+
         # give approximate solution using constant value for linear material parameter
         self.solution = fsolve(self.fxn_array, self.x0)
-        # need to understand how these parts actually work
-
-
-if __name__ == '__main__':
-    problem = Poisson(DielectricObjectInUniformField(Meshes.annulus))
-    problem.export_solution()
