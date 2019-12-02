@@ -9,10 +9,10 @@ from scipy.optimize import fsolve
 import matrix_assmbly
 from mesh import Meshes, TriangleMesh
 
+EPS0 = 8.854e-12
+MU0 = 4e-7 * pi
 
 class PoissonProblemDefinition(ABC):
-    EPS0 = 8.854e-12
-    MU0 = 4e-7 * pi
 
     def __init__(self, mesh: Union[str, TriangleMesh], name: str):
         if type(mesh) is str:
@@ -173,33 +173,39 @@ class Airfoil(PoissonProblemDefinition):
     def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
         pass
 
-class Nonlinear(PoissonProblemDefinition):
-    def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.heart, name: str = 'nonlinear'):
-        super().__init__(mesh, name)
-        self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh, 1)
-        self.b = matrix_assmbly.assemble_global_vector(self.mesh, PoissonProblemDefinition.source, self.K.shape[0])
-        self.fxn_array = matrix_assmbly.assemble_global_stiffness_matrix_nonlinear(self.mesh,
-                                                                  PoissonProblemDefinition.linear_material, self.b)
-        self.x0 = spsolve(self.K, self.b) #give approximate solution using constant value for linear material parameter
-        self.solution = fsolve(self.fxn_array, self.x0)
 
+class NonLinearPoissonProblemDefinition(ABC):
+    def __init__(self, mesh: Union[str, TriangleMesh], name: str = 'nonlinear'):
+        if type(mesh) is str:
+            self.mesh = TriangleMesh(mesh)
+        else:
+            self.mesh = mesh
+        self.name = name
 
-    def linear_material(self, element_marker: int) -> float: #each diff type of element marker takes fxn from diff text file in reluctances
-        #assume we can fit each distribution for now
-        #if element_marker = 1:
-            #give certain distn back
-        #else if element_marker = 2:    need to figure out representation of distn we will get
-        pass
+    def non_linear_material(self, element_marker: int, coordinate: np.ndarray, field_strength: float) ->:
+        raise NotImplementedError
 
     def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        pass
+        raise NotImplementedError
 
     def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        pass
+        raise NotImplementedError
 
     def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
-        pass
-    #need to understand how these parts actually work
+        raise NotImplementedError
+
+
+class NonlinearPoisson:
+    def __init__(self, definition: NonLinearPoissonProblemDefinition):
+        self.mesh = definition.mesh
+        self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh, 1)
+        self.b = matrix_assmbly.assemble_global_vector(self.mesh, PoissonProblemDefinition.source, self.K.shape[0])
+        self.fxn_array = matrix_assmbly \
+            .assemble_global_stiffness_matrix_nonlinear(self.mesh, PoissonProblemDefinition.linear_material, self.b)
+        self.x0 = spsolve(self.K, self.b)
+        # give approximate solution using constant value for linear material parameter
+        self.solution = fsolve(self.fxn_array, self.x0)
+        # need to understand how these parts actually work
 
 
 if __name__ == '__main__':

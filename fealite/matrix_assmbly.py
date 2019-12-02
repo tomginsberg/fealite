@@ -22,13 +22,15 @@ def assemble_global_stiffness_matrix(mesh: TriangleMesh,
 
     return sparse.coo_matrix((values, (rows, cols))).tolil()
 
+
 def assemble_global_stiffness_matrix_nonlinear(mesh: TriangleMesh,
-                                     alpha: PoissonProblemDefinition.linear_material, b: PoissonProblemDefinition.b):
-    #want to return function of A = [A_1, A_2, ... A_n] where n is number of nodes
-    #not stiffness matrix anymore, just the functions necessary for solving recursively
+                                               alpha: PoissonProblemDefinition.linear_material,
+                                               b: sparse.lil_matrix):
+    # want to return function of A = [A_1, A_2, ... A_n] where n is number of nodes
+    # not stiffness matrix anymore, just the functions necessary for solving recursively
     rows, cols, values = [], [], []
 
-    def fxn(A: np.array):
+    def fxn(a: np.array):
 
         for element, shp_fn, marker in zip(mesh.mesh_elements, mesh.mesh_shape_functions,
                                            mesh.mesh_markers):
@@ -37,16 +39,18 @@ def assemble_global_stiffness_matrix_nonlinear(mesh: TriangleMesh,
                 for j in range(i, n):
                     rows.append(element[i])
                     cols.append(element[j])
-                    values.append(shp_fn.stiffness_matrix[i, j] * alpha(marker)(A[j])) #alpha returns reluctance as fxn of A_j
+                    values.append(
+                        shp_fn.stiffness_matrix[i, j] * alpha(marker)(a[j]))  # alpha returns reluctance as fxn of A_j
                     if i != j:
                         rows.append(element[j])
                         cols.append(element[i])
                         values.append(shp_fn.stiffness_matrix[j, i] * alpha(marker))
 
         matrix_rep = sparse.coo_matrix((values, (rows, cols))).tolil()
-        return np.subtract(np.matmul(matrix_rep, A), b)
+        return np.subtract(np.matmul(matrix_rep, a), b)
 
     return fxn
+
 
 def assemble_global_vector(mesh: TriangleMesh, f: PoissonProblemDefinition.source, size: int) -> sparse.lil_matrix:
     rows, values = [], []
@@ -60,4 +64,3 @@ def assemble_global_vector(mesh: TriangleMesh, f: PoissonProblemDefinition.sourc
                 values.append(shp_fn.double_area / 6 * source_value)
 
     return sparse.coo_matrix((values, (rows, np.zeros_like(rows))), shape=(size, 1)).tolil()
-
