@@ -65,7 +65,8 @@ def local_properties(curr: np.ndarray, element: Tuple[int, int, int], marker, sh
     # compute the gradient of the non linear material property for this field strength w respect to the node values
     grad_alpha = alpha(marker, field2norm, div=True) * (
             (shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y) * np.dot((shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y),
-                                                                 a_ijk)) / ((shp_fn.double_area ** 2) * field2norm)
+                                                                 a_ijk.transpose())) / (
+                             (shp_fn.double_area ** 2) * field2norm)
     return a_ijk, field2norm, alpha_field, grad_alpha
 
 
@@ -75,7 +76,6 @@ def assemble_jacobian(mesh: TriangleMesh, alpha: NonLinearPoissonProblemDefiniti
     for element, shp_fn, marker in zip(mesh.mesh_elements, mesh.mesh_shape_functions,
                                        mesh.mesh_markers):
 
-        # compute field approximation on this element
         a_ijk, field2norm, alpha_field, grad_alpha = local_properties(curr, element, marker, shp_fn, alpha)
         local_jacobian = alpha_field * np.matmul(np.matmul(shp_fn.stiffness_matrix, a_ijk.transpose()),
                                                  grad_alpha) * np.dot(
