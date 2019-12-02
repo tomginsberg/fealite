@@ -4,6 +4,7 @@ from typing import Union, Optional, Tuple
 
 import numpy as np
 from scipy.sparse.linalg import spsolve
+from scipy.optimize import fsolve
 
 import matrix_assmbly
 from mesh import Meshes, TriangleMesh
@@ -171,6 +172,34 @@ class Airfoil(PoissonProblemDefinition):
 
     def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
         pass
+
+class Nonlinear(PoissonProblemDefinition):
+    def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.heart, name: str = 'nonlinear'):
+        super().__init__(mesh, name)
+        self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh, 1)
+        self.b = matrix_assmbly.assemble_global_vector(self.mesh, PoissonProblemDefinition.source, self.K.shape[0])
+        self.fxn_array = matrix_assmbly.assemble_global_stiffness_matrix_nonlinear(self.mesh,
+                                                                  PoissonProblemDefinition.linear_material, self.b)
+        self.x0 = spsolve(self.K, self.b) #give approximate solution using constant value for linear material parameter
+        self.solution = fsolve(self.fxn_array, self.x0)
+
+
+    def linear_material(self, element_marker: int) -> float: #each diff type of element marker takes fxn from diff text file in reluctances
+        #assume we can fit each distribution for now
+        #if element_marker = 1:
+            #give certain distn back
+        #else if element_marker = 2:    need to figure out representation of distn we will get
+        pass
+
+    def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
+        pass
+
+    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
+        pass
+
+    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
+        pass
+    #need to understand how these parts actually work
 
 
 if __name__ == '__main__':
