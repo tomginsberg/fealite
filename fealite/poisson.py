@@ -25,8 +25,6 @@ class Poisson(ABC):
         self.q = definition.neumann_boundary
         self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh, self.alpha)
         self.b = matrix_assmbly.assemble_global_vector(self.mesh, self.f, self.K.shape[0])
-        apply_dirichlet(self.mesh, self.K, self.b, self.p)
-        apply_neumann(self.mesh, self.b, self.q)
 
     def _export_solution(self, solution):
         export_path = f'solutions/{self.mesh.short_name}_{self.name}.txt'
@@ -49,6 +47,8 @@ class LinearPoisson(Poisson):
         super().__init__(definition)
 
     def solve_and_export(self):
+        apply_dirichlet(self.mesh, self.K, self.b, self.p)
+        apply_neumann(self.mesh, self.b, self.q)
         super()._export_solution(spsolve(self.K.tocsc(), self.b))
 
 
@@ -64,7 +64,15 @@ class NonLinearPoisson(Poisson):
         super().__init__(definition)
 
     def solve_and_export(self):
-        a_0 = spsolve(self.K, self.b)
-        n_sys = NonLinearSystem(self.mesh, self.alpha, self.p, self.q, np.array(self.b.todense()).transpose().squeeze())
+        apply_neumann(self.mesh, self.b, self.q)
+        # Save a copy of b that hasn't had dirichlet modifications applied to it
+        b_un_modified = self.b.copy()
+
+        # Apply dirichlet conditions
+        apply_dirichlet(self.mesh, self.K, self.b, self.p)
+
+        # Solve for the first guess using material none value
+        a_0 = spsolve(self.K.tocsc(), self.b)
+        n_sys = NonLinearSystem(self.mesh, self.alpha, self.p, self.q, np.array(b_un_modified.todense()).transpose().squeeze())
         solution = fsolve(n_sys.sys_eval, a_0, fprime=n_sys.jacobian)
         super()._export_solution(solution)

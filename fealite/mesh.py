@@ -100,7 +100,7 @@ class Meshes:
     annulus = 'meshes/annulus.tmh'
     cylinder_in_square_fine = 'meshes/cylinder-in-square-fine.tmh'
     heart = 'meshes/heart.tmh'
-    unit_disk = 'meshes/unit_disk.tmh'
+    unit_disk = 'meshes/unit-disk.tmh'
 
 
 if __name__ == '__main__':

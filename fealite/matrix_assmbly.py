@@ -69,7 +69,7 @@ class NonLinearSystem:
     def __init__(self, mesh: TriangleMesh, alpha: NonLinearPoissonProblemDefinition.material,
                  p: NonLinearPoissonProblemDefinition.dirichlet_boundary,
                  q: NonLinearPoissonProblemDefinition.neumann_boundary,
-                 b: sparse.lil_matrix):
+                 b: np.ndarray):
         self.mesh = mesh
         self.alpha = alpha
         self.p = p
@@ -96,19 +96,19 @@ class NonLinearSystem:
 
         k = sparse.coo_matrix((values, (rows, cols))).tolil()
         apply_dirichlet(self.mesh, k, b, self.p)
-        apply_neumann(self.mesh, b, self.q)
-        return k.dot(curr) - b
+        return k @ curr - b
 
     def jacobian(self, curr) -> np.ndarray:
-        # Todo: think about this
         rows, cols, values = [], [], []
         for element, shp_fn, marker in zip(self.mesh.mesh_elements, self.mesh.mesh_shape_functions,
                                            self.mesh.mesh_markers):
 
             a_ijk, field2norm, alpha_field, grad_alpha = local_properties(curr, element, marker, shp_fn, self.alpha)
-            local_jacobian = alpha_field * np.matmul(np.matmul(shp_fn.stiffness_matrix, a_ijk.transpose()),
-                                                     grad_alpha) * np.dot(
-                shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y, a_ijk.transpose()) + shp_fn.stiffness_matrix * alpha_field
+            # local_jacobian = alpha_field * np.matmul(np.matmul(shp_fn.stiffness_matrix, a_ijk.transpose()),
+            #                                          grad_alpha) * np.dot(
+            #     shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y, a_ijk.transpose()) + shp_fn.stiffness_matrix * alpha_field
+            local_jacobian = \
+                shp_fn.stiffness_matrix @ (alpha_field * np.identity(3) + a_ijk.transpose() @ grad_alpha)
 
             n = len(element)
             for i in range(n):
@@ -126,7 +126,6 @@ class NonLinearSystem:
             if self.p(marker, self.mesh.coordinates[v]) is not None:
                 # zero all fixed terms in the jacobian
                 j[marker, :] *= 0
-                j[:, marker] *= 0
                 j[marker, marker] = 1
         return j
 
@@ -137,14 +136,14 @@ def local_properties(curr: np.ndarray, element: Tuple[int, int, int], marker, sh
     a_ijk = np.array([[curr[i] for i in element]])
     # compute field approximation on this element
     field2norm = np.linalg.norm(
-        [np.dot(shp_fn.div_N_ijk__x, a_ijk.transpose()), np.dot(shp_fn.div_N_ijk__x, a_ijk.transpose())])
+        a_ijk @ np.vstack((shp_fn.div_N_ijk__x, shp_fn.div_N_ijk__y)).transpose()
+    )
     # compute non linear material property for this field strength
     alpha_field = alpha(marker, field2norm)
     # compute the gradient of the non linear material property for this field strength w respect to the node values
-    grad_alpha = alpha(marker, field2norm, div=True) * (
-            (shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y) *
-            np.dot((shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y), a_ijk.transpose())) / (
-                             (shp_fn.double_area ** 2) * field2norm)
+    grad_alpha = alpha(marker, field2norm, div=True) / field2norm * (
+            a_ijk @ shp_fn.stiffness_matrix * 2 / shp_fn.double_area)
+
     return a_ijk, field2norm, alpha_field, grad_alpha
 
 
