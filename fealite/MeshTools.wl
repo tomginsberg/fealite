@@ -18,3 +18,4 @@ ToElementMeshDefault[bmesh_,markers_]:=ToElementMesh[bmesh,"RegionMarker"->marke
 MeshInspect[mesh_]:=GraphicsRow[{mesh["Wireframe"["MeshElement"->"BoundaryElements","MeshElementMarkerStyle"->Red]],mesh["Wireframe"["MeshElementStyle"->FaceForm/@ColorData["DarkRainbow"]/@Subdivide[CountDistinct[mesh["MeshElements"][[1,2]]]]]]}]//Legended[#,SwatchLegend[ColorData["DarkRainbow"]/@Subdivide[CountDistinct[mesh["MeshElements"][[1,2]]]],KeySort[mesh["MeshElements"][[1,2]]//Counts]//Keys]]&
 InterpAndShow[data_,object_]:=Module[{f=Interpolation[data,InterpolationOrder->1]},
 g=-Grad[f[xx,yy],{xx,yy}];domain=Rectangle@@(f["Domain"]//Transpose);Show[ContourPlot[f[xx,yy],{xx,yy}\[Element]domain,ColorFunction->"Pastel",PlotLegends->Automatic],Graphics[{Opacity[0],EdgeForm[Thickness[.01/5]],object}],StreamPlot[g,{xx,yy}\[Element]domain]]]
+RescaleRegion[r_]:=RegionResize[r,{#*{-1,1},{-1,1}}&@(#[[1]]/#[[2]]&@(Total[{-1,1}.#]&/@Transpose@(BoundingRegion[r][[i]]~Table~{i,1,2})))]

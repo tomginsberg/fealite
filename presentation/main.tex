@@ -1,7 +1,5 @@
 \documentclass{beamer}
-\usepackage{verbatim}
-\usepackage{physics}
-\usepackage{amsmath}
+
 
 \mode<presentation>
 {
@@ -15,6 +13,23 @@
 \usepackage[english]{babel}
 \usepackage[utf8x]{inputenc}
 \usepackage{graphicx}
+\usepackage{verbatim}
+\usepackage{physics}
+\usepackage{amsmath}
+
+\makeatletter
+\renewcommand\footnotesize{%
+\@setfontsize\footnotesize\@ixpt{6}%
+\abovedisplayskip 8\p@ \@plus2\p@ \@minus4\p@
+\abovedisplayshortskip \z@ \@plus\p@
+\belowdisplayshortskip 4\p@ \@plus2\p@ \@minus2\p@
+\def\@listi{\leftmargin\leftmargini
+\topsep 4\p@ \@plus2\p@ \@minus2\p@
+\parsep 2\p@ \@plus\p@ \@minus\p@
+\itemsep \parsep}%
+\belowdisplayskip \abovedisplayskip
+}
+\makeatother
 
 \title[Your Short Title]{Magneto-static Analysis of a Brushless DC Motor}
 \author{\small Tom Ginsberg, Brendan Posehn}
@@ -38,7 +53,7 @@
             \item {\large Theory}\\
             Magneto-statics, Permanent Magnets, Non Linear Materials, Non Linear FEM
             \item {\large Implementation}\\
-            Meshing, Matrix Assembly, Solving, Newton Raphson
+            Meshing, Matrix Assembly, Solvers, BLDC Problem
             \item {\large Results}\\
             Diagrams, Torques
         \end{itemize}
@@ -110,7 +125,42 @@
 
     \end{frame}
 
-    \begin{frame}{Implementation: Mesh Generation}
+
+    \begin{frame}{Mesh}
+        \begin{itemize}
+            \item Generated with Mathematica
+            \item Triangular Elements
+            \item Linear Shape Functions
+            $A=\sum_{i=1}^{3}N_{i}A_i$
+        \end{itemize}
+        \begin{center}
+            \includegraphics[width=2.8in]{rosemesh.pdf}
+        \end{center}
+    \end{frame}
+    \begin{frame}[fragile]
+        \frametitle{Matrix Assembly}
+        Dense element matrices are assembled into a sparse global matrix using by substituting equality constraints at shared nodes
+        \[K_{i,j}=\sum_{e\in E(i,j)}\sum_{k=l=0}^{3} K^{e}_{k,l}*\alpha(e)\]
+        $e=\{v_a,v_b,v_c\}$ is an element, $E$ is the element set, $E(i,j)$ is the set of elements $\{\,e\,|\,e\in E,\,\left(\{v_i\}\cup\{v_j\}\right)\subset e\}$, $K^{e}$ is the local stiffness matrix of $e$, $\alpha$ is a function of the element properties.\\
+        \begin{center}
+            \includegraphics[width=2.5in]{meshmatrix.png}
+        \end{center}
+    \end{frame}
+
+    \begin{frame}{Solvers}
+        \begin{itemize}
+            \item Linear FEM\\
+            Sparse linear systems solved with {\verb!scipy.linalg.sparse.spsolve}\footnote{Wrapper for SuperLU 4.0 (LU decomposition)}
+            \item Non Linear FEM
+            Sparse non linear systems solved with {\verb!scipy.optimize.fsolve}\footnote{Wrapper for MINIPACK hybrj (Newton's Method + Gradient Descent)}.
+            Jacobian is analytically computed to speed up the solver.
+        \end{itemize}
+        \begin{center}
+            \includegraphics[width=3in]{cybercar.pdf}
+        \end{center}
+    \end{frame}
+
+    \begin{frame}{Appendix: Mesh Generation and Format}
         \begin{itemize}
             \item Meshes are generated using the Mathematica 12 mesh generator
             \item Exported as:\\ list of coordinates [$x$, $y$]$^v$ \\list of mesh elements [$v_1$, $v_2$, $v_3$, marker]$^{e}$ \\list of boundary elements [$v_1$, $v_2$, marker]$^{be}$
@@ -121,11 +171,17 @@
             \centering
             \includegraphics[width=3.5in]{meshdemo.png}
         \end{figure}
-
     \end{frame}
-    \begin{frame}{Mesh}
-        \begin{itemize}
-            \item
-        \end{itemize}
+    \begin{frame}[fragile]{Appendix: Matrix Assembly}
+
+        Global stiffness matrix assembly code for reference
+        {\small
+        \begin{verbatim}
+    [(element[i], element[j], shp_fn.stiffness_matrix[i, j]
+        * alpha(marker)) for i in range(3) for j in range(3)
+        for element, shp_fn, marker in
+        zip(elements, shp_fns, markers)]
+        \end{verbatim}}
+        List of all (row, col, val) tuples, overlapping values are summed.
     \end{frame}
 \end{document}
