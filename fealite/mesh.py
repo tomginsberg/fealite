@@ -104,7 +104,7 @@ class Meshes:
 
 
 if __name__ == '__main__':
-    # mesh = TriangleMesh(file_name='meshes/cylinder-in-square.tmh')
     mesh = TriangleMesh(Meshes.heart)
     mesh.show_mesh(title=None)
     # mesh.show_mesh(title=None, label_everything=False)
+

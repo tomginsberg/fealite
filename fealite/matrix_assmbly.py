@@ -6,6 +6,10 @@ from mesh import TriangleMesh
 from problem_definitions import PoissonProblemDefinition, NonLinearPoissonProblemDefinition
 import poisson
 import numpy as np
+import autograd.numpy as autograd_np
+from autograd import jacobian as autograd_jacobian
+import torch
+from torch.autograd.gradcheck import zero_gradients
 
 
 def distance(c1: np.ndarray, c2: np.ndarray) -> float:
@@ -14,7 +18,7 @@ def distance(c1: np.ndarray, c2: np.ndarray) -> float:
     return np.linalg.norm([x1 - x2, y1 - y2])
 
 
-def apply_dirichlet(mesh: TriangleMesh, k: lil_matrix, b: Union[lil_matrix, np.ndarray],
+def apply_dirichlet(mesh: TriangleMesh, k: Union[lil_matrix, np.ndarray], b: Union[lil_matrix, np.ndarray],
                     p: PoissonProblemDefinition.dirichlet_boundary):
     for v, marker in mesh.boundary_dict.items():
         boundary_value = p(marker, mesh.coordinates[v])
@@ -104,30 +108,60 @@ class NonLinearSystem:
                                            self.mesh.mesh_markers):
 
             a_ijk, field2norm, alpha_field, grad_alpha = local_properties(curr, element, marker, shp_fn, self.alpha)
-            # local_jacobian = alpha_field * np.matmul(np.matmul(shp_fn.stiffness_matrix, a_ijk.transpose()),
-            #                                          grad_alpha) * np.dot(
-            #     shp_fn.div_N_ijk__x + shp_fn.div_N_ijk__y, a_ijk.transpose()) + shp_fn.stiffness_matrix * alpha_field
+
             local_jacobian = \
                 shp_fn.stiffness_matrix @ (alpha_field * np.identity(3) + a_ijk.transpose() @ grad_alpha)
 
             n = len(element)
             for i in range(n):
-                for j in range(i, n):
+                for j in range(n):
                     rows.append(element[i])
                     cols.append(element[j])
                     values.append(local_jacobian[i, j])
-                    if i != j:
-                        rows.append(element[j])
-                        cols.append(element[i])
-                        values.append(local_jacobian[j, i])
-        # test is this can be sparse
+
         j = np.array(sparse.coo_matrix((values, (rows, cols))).todense())
         for v, marker in self.mesh.boundary_dict.items():
             if self.p(marker, self.mesh.coordinates[v]) is not None:
                 # zero all fixed terms in the jacobian
-                j[marker, :] *= 0
-                j[marker, marker] = 1
+                j[v, :] *= 0
+                j[v, v] = 1
         return j
+
+    def auto_jacobian(self, curr: np.ndarray) -> np.ndarray:
+        b = torch.from_numpy(self.b.copy())
+
+        def f(curr):
+            k = torch.zeros((curr.shape[0], curr.shape[0]))
+            for element, shp_fn, marker in zip(self.mesh.mesh_elements, self.mesh.mesh_shape_functions,
+                                               self.mesh.mesh_markers):
+                a_ijk = torch.tensor([[1. if n == e else 0 for n in range(curr.shape(0))] for e in element]) @ curr
+                # compute field approximation on this element
+                field2norm = torch.norm(
+                    a_ijk @ torch.cat(
+                        (torch.from_numpy(shp_fn.div_N_ijk__x).float(),
+                         torch.from_numpy(shp_fn.div_N_ijk__y).float())).t()
+                )
+
+                alpha_field = self.alpha(marker, field2norm)
+                s = torch.from_numpy(shp_fn.stiffness_matrix).float()
+                n = len(element)
+                for i in range(n):
+                    for j in range(n):
+                        k[element[i], element[j]] += s[i, j] * alpha_field
+
+            return k @ curr.unsqueeze(0).t().float()
+            # apply_dirichlet(self.mesh, k, b, self.p)
+
+        x = torch.from_numpy(curr).float()
+        x.requires_grad_()
+        y = f(x)
+        grads = []
+        import tqdm
+        for v in tqdm.tqdm(y):
+            v.backward(retain_graph=True)
+            grads.append(x.grad)
+            zero_gradients(x)
+        return torch.stack(grads).numpy()
 
 
 def local_properties(curr: np.ndarray, element: Tuple[int, int, int], marker, shp_fn,

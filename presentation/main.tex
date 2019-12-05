@@ -16,6 +16,7 @@
 \usepackage{verbatim}
 \usepackage{physics}
 \usepackage{amsmath}
+\newcommand\norm[1]{\left\lVert#1\right\rVert}
 
 \makeatletter
 \renewcommand\footnotesize{%
@@ -92,18 +93,15 @@
     \begin{frame}{Theory: Non Linear FEM}
         How can we use FEM to solve problems in the form of
         \[\nabla\cdot\left(\alpha(\|\nabla\phi\|)*\nabla\phi\right)=f(x,y)\]
-        \textbf{First thing}: Determine $\|\nabla\phi\|$ on a single element in terms of node values of $\phi$: $\left( \phi_i, \phi_j, \phi_k \right)$
-        \[\left|\left(\pdv{\phi}{x},\pdv{\phi}{y}\right)\right|=\left|\left(\pdv{\vec{N}}{x}, \pdv{\vec{N}}{y} \right)^{\text{T}}\cdot \left(
-        \begin{array}{c}
-            \phi _i \\
-            \phi _j \\
-            \phi _k \\
-        \end{array}
-        \right)\right|\]
+        \textbf{First thing}: Determine $\|\nabla\phi\|$ on a single element in terms of node values of $\phi$: $\phi^{e}:=\left( \phi_i, \phi_j, \phi_k \right)^{\text{T}}$
+        \begin{gather*}
+            \norm{\left(\pdv{\phi}{x},\pdv{\phi}{y}\right)}=\norm{\left(\pdv{\vec{N}}{x}, \pdv{\vec{N}}{y} \right)^{\text{T}}\cdot \phi^{e}}\\
+            \hat{\alpha}(\phi^e):=\alpha(\norm{\nabla\phi})
+        \end{gather*}
     \end{frame}
     \begin{frame}{Solving the Non Linear System}
         Now our element matrix equation looks like:
-        \[F(\vec{\phi})=\mathbf{K}\cdot\vec{\phi}*\alpha(\vec{\phi})-\vec{b}=0\]
+        \[F_e(\phi^{e})=\mathbf{K}^e\cdot \phi^e*\hat{\alpha}(\phi^{e})-\vec{b}^e=0\]
         No more linear solver :( we need to use Newton's Method\\
         \smallbreak
         Consider the vector equation $f(\vec{x})=0$
@@ -115,7 +113,7 @@
             Iterate.
             \begin{align*}
                 &\mathbf{J}_{f(\vec{x}_n)}\left(\vec{x}_{n}-\vec{x}_{n+1}\right)=f(\vec{x}_{n})\\
-                &\mathbf{J}_{F(\vec{\phi_n})}=\mathbf{K}\left( \mathbf{I}*\alpha(\vec{\phi_n})+\left(\vec{\phi_n}\right)^{\text{T}}\cdot \nabla_{\vec{\phi}}\alpha(\vec{\phi_n}) \right)\\
+                &\mathbf{J}_{F_e(\phi_n^e)}=\mathbf{K}^e\left( \mathbf{I}*\hat{\alpha}(\phi_n^e)+\left(\phi_n^e\right)\cdot \nabla^{\text{T}}\hat{\alpha}(\phi_n^e) \right)\\
             \end{align*}
         \end{itemize}
     \end{frame}
@@ -140,8 +138,8 @@
     \begin{frame}[fragile]
         \frametitle{Matrix Assembly}
         Dense element matrices are assembled into a sparse global matrix using by substituting equality constraints at shared nodes
-        \[K_{i,j}=\sum_{e\in E(i,j)}\sum_{k=l=0}^{3} K^{e}_{k,l}*\alpha(e)\]
-        $e=\{v_a,v_b,v_c\}$ is an element, $E$ is the element set, $E(i,j)$ is the set of elements $\{\,e\,|\,e\in E,\,\left(\{v_i\}\cup\{v_j\}\right)\subset e\}$, $K^{e}$ is the local stiffness matrix of $e$, $\alpha$ is a function of the element properties.\\
+        \[\mathbf{K}_{i,j}=\sum_{e\in E(i,j)}\sum_{k=l=0}^{3} \mathbf{K}^{e}_{k,l}*\alpha(e)\]
+        $e=\{v_a,v_b,v_c\}$ is an element, $E$ is the element set, $E(i,j)$ is the set of elements $\{\,e\,|\,e\in E,\,\left(\{v_i\}\cup\{v_j\}\right)\subset e\}$, $\mathbf{K}^{e}$ is the local stiffness matrix of $e$, $\alpha$ is a function of the element properties.\\
         \begin{center}
             \includegraphics[width=2.5in]{meshmatrix.png}
         \end{center}
@@ -149,9 +147,9 @@
 
     \begin{frame}{Solvers}
         \begin{itemize}
-            \item Linear FEM\\
+            \item Linear FEM:\\
             Sparse linear systems solved with {\verb!scipy.linalg.sparse.spsolve}\footnote{Wrapper for SuperLU 4.0 (LU decomposition)}
-            \item Non Linear FEM
+            \item Non Linear FEM:
             Sparse non linear systems solved with {\verb!scipy.optimize.fsolve}\footnote{Wrapper for MINIPACK hybrj (Newton's Method + Gradient Descent)}.
             Jacobian is analytically computed to speed up the solver.
         \end{itemize}
@@ -183,5 +181,24 @@
         zip(elements, shp_fns, markers)]
         \end{verbatim}}
         List of all (row, col, val) tuples, overlapping values are summed.
+    \end{frame}
+    \begin{frame}[fragile]{Appendix: Gradient of $\alpha$}
+        Given a function $\alpha(\|\nabla\phi\|)$ where
+        \[\norm{\nabla\phi}=\norm{\left(\pdv{\vec{N}}{x}, \pdv{\vec{N}}{y} \right)^{\text{T}}\cdot \left(
+        \begin{array}{c}
+            \phi _i \\
+            \phi _j \\
+            \phi _k \\
+        \end{array}
+        \right)}\]
+        \[\nabla\alpha=\frac{\alpha'(\norm{\nabla\phi})}{\norm{\nabla\phi}}
+        \left(\pdv{\vec{N}}{x}\cdot\left(\pdv{\vec{N}}{x}\right)^{\text{T}}+
+        \pdv{\vec{N}}{y}\cdot\left(\pdv{\vec{N}}{y}\right)^{\text{T}}\right)\cdot \left(
+        \begin{array}{c}
+            \phi _i \\
+            \phi _j \\
+            \phi _k \\
+        \end{array}
+        \right)\]
     \end{frame}
 \end{document}

@@ -72,7 +72,18 @@ class NonLinearPoisson(Poisson):
         apply_dirichlet(self.mesh, self.K, self.b, self.p)
 
         # Solve for the first guess using material none value
-        a_0 = spsolve(self.K.tocsc(), self.b)
-        n_sys = NonLinearSystem(self.mesh, self.alpha, self.p, self.q, np.array(b_un_modified.todense()).transpose().squeeze())
+        a_0 = np.array(spsolve(self.K.tocsc(), self.b))
+        n_sys = NonLinearSystem(self.mesh, self.alpha, self.p, self.q,
+                                np.array(b_un_modified.todense()).transpose().squeeze())
         solution = fsolve(n_sys.sys_eval, a_0, fprime=n_sys.jacobian)
         super()._export_solution(solution)
+
+
+def format_matrix(x: np.ndarray) -> str:
+    return '\n'.join(map(lambda row: '\t'.join(map(str, row)), x))
+
+
+def export_matrix(name: str, matrix: np.ndarray):
+    with open(name, 'w') as f:
+        f.write(format_matrix(matrix))
+        print(f'{name} is written')
