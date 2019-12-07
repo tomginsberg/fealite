@@ -66,6 +66,6 @@ InterpAndShow[
 *Equipotential Contours and Field Arrows*
 
 #### Example 1: *Non Linear FEM*
-Coming soon
+Functions Available, Documentation Coming Soon
 
 ###### tags: `Non-Linear` `FEA` `Simulation`
