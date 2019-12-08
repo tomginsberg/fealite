@@ -120,7 +120,7 @@ bMotorMesh =
         numCoils}]]]];
 bMotorMesh["Wireframe"]
 ```
-<src="https://i.imgur.com/Rf6sAZt.png", width=300>
+<image src="https://i.imgur.com/Rf6sAZt.png", width=300>
 
 Specify the region coordinates
 
