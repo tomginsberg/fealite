@@ -60,7 +60,44 @@
         \end{itemize}
 
     \end{frame}
-    \begin{frame}{Theory: Magnetostatics in a 2D Cross Section}
+
+    \begin{frame}{Brushless DC Motors}
+        BLDC motors consist of coils surrounding a permanent magnet\newline
+        \begin{figure}
+            \center
+            \includegraphics[width=2in]{motor_simple.pdf}
+            \caption*{8 coil, 6 pole BLDC motor}
+        \end{figure}
+    \end{frame}
+
+    \begin{frame}{Brushless DC Motors}
+        The inner disk (rotor) is driven by the magnetic field produced by the coils
+        \begin{figure}
+            \center
+            \includegraphics[width=2in]{motor_arrows.pdf}
+            \caption*{Current and Magnetic Poles}
+        \end{figure}
+    \end{frame}
+
+    \begin{frame}{Torque on a Magnetic Dipole}
+        \[\tau \propto \vec{\mu} \times \vec{B}\]
+        \begin{figure}
+            \center
+            \includegraphics[width=2.5in]{Momento_torcente_magnetico.pdf}
+            \caption*{Magnetic Dipole in a Uniform Field}
+        \end{figure}
+    \end{frame}
+
+    \begin{frame}{Coils}
+        Coils produce a field similar to that of a bar magnet
+        \begin{figure}
+            \center
+            \includegraphics[width=2.5in]{coil.pdf}
+            \caption*{Field produced by a motor coil}
+        \end{figure}
+    \end{frame}
+
+    \begin{frame}{Magnetostatics in a 2D Cross Section}
         If current is only perpendicular to the 2D plane, then
         \begin{align*}
             &\nabla\times \nu B=J\text{ and }\nabla \times A = B\\
@@ -70,7 +107,7 @@
             \includegraphics[width=3in]{heartwire.pdf}
         \end{center}
     \end{frame}
-    \begin{frame}{Theory: Permanent Magnets}
+    \begin{frame}{Permanent Magnets}
         Maxwell's Equation's for Permanent Magnets
         \begin{align*}
             B &= \mu H +\mu_0 M_r\text{ and } \nabla \times H = J \implies \nabla \times \nu B=J+\nabla\times \nu\mu_0 M_r\\
@@ -84,13 +121,27 @@
         We use a \textit{2D-coil} model for permanent magnets.
         \begin{itemize}
             \item \textbf{Assumption}: A bar magnet has a similar field to a current carrying coil
-            \item \textbf{Heuristic}: Any magnet geometry can be approximated from gluing together curved bar magnets
+            \item \textbf{Model}: Any magnet geometry can be approximated from gluing together curved bar magnets
         \end{itemize}
-        \begin{center}
-            \includegraphics[width=3in]{ring.png}
-        \end{center}
+        \begin{figure}
+            \center
+            \includegraphics[width=2in]{current_magnet.pdf}
+            \caption*{Yellow lines are current sheet coming out of the page, Green are in}
+        \end{figure}
     \end{frame}
-    \begin{frame}{Theory: Non Linear FEM}
+    \begin{frame}{Torque}
+        Force from Maxwell's Stress tensor
+        \begin{gather*}
+            \vec{F}=\oint_{s} \mathbf{\sigma} \cdot d S\\
+            \vec{F}=\oint_{s}\left[\frac{1}{\mu_{0}}\left(B_{n} B_{t}\right) \vec{t}+\frac{1}{2 \mu_{0}}\left(B_{n}^{2}-B_{t}^{2}\right) \vec{n}\right] d S\\
+        \end{gather*}
+        Two dimensional simplification for the BLDC magnet
+        \begin{equation*}
+            \tau=\frac{1}{\mu_{0}\left(r_{s}-r_{r}\right)} \int_{r_{r}}^{r_{s}} \int_{0}^{2 \pi}\left(r B_{r} B_{\theta}\right) dS
+        \end{equation*}
+        Since this is a two dimensional contour the output is torque per unit length
+    \end{frame}
+    \begin{frame}{Non Linear FEM}
         How can we use FEM to solve problems in the form of
         \[\nabla\cdot\left(\alpha(\|\nabla\phi\|)*\nabla\phi\right)=f(x,y)\]
         \textbf{First thing}: Determine $\|\nabla\phi\|$ on a single element in terms of node values of $\phi$: $\phi^{e}:=\left( \phi_i, \phi_j, \phi_k \right)^{\text{T}}$
@@ -137,7 +188,7 @@
     \end{frame}
     \begin{frame}[fragile]
         \frametitle{Matrix Assembly}
-        Dense element matrices are assembled into a sparse global matrix using by substituting equality constraints at shared nodes
+        Dense element matrices are assembled into a sparse global matrix by substituting equality constraints at shared nodes
         \[\mathbf{K}_{i,j}=\sum_{e\in E(i,j)}\sum_{k=l=0}^{3} \mathbf{K}^{e}_{k,l}*\alpha(e)\]
         $e=\{v_a,v_b,v_c\}$ is an element, $E$ is the element set, $E(i,j)$ is the set of elements $\{\,e\,|\,e\in E,\,\left(\{v_i\}\cup\{v_j\}\right)\subset e\}$, $\mathbf{K}^{e}$ is the local stiffness matrix of $e$, $\alpha$ is a function of the element properties.\\
         \begin{center}
@@ -157,7 +208,18 @@
             \includegraphics[width=3in]{cybercar.pdf}
         \end{center}
     \end{frame}
-
+    \begin{frame}{BLDC Simulation}
+        Mesh and Boundaries
+        \begin{center}
+            \includegraphics[width=\linewidth]{motor_mesh.pdf}
+        \end{center}
+    \end{frame}
+    \begin{frame}{BLDC Simulation}
+        Flux Plot
+        \begin{center}
+            \includegraphics[width=.6\linewidth]{motor1.pdf}
+        \end{center}
+    \end{frame}
     \begin{frame}{Appendix: Mesh Generation and Format}
         \begin{itemize}
             \item Meshes are generated using the Mathematica 12 mesh generator
@@ -175,10 +237,10 @@
         Global stiffness matrix assembly code for reference
         {\small
         \begin{verbatim}
-    [(element[i], element[j], shp_fn.stiffness_matrix[i, j]
-        * alpha(marker)) for i in range(3) for j in range(3)
-        for element, shp_fn, marker in
-        zip(elements, shp_fns, markers)]
+[(element[i], element[j], shp_fn.stiffness_matrix[i, j]
+* alpha(marker)) for i in range(3) for j in range(3)
+for element, shp_fn, marker in
+zip(elements, shp_fns, markers)]
         \end{verbatim}}
         List of all (row, col, val) tuples, overlapping values are summed.
     \end{frame}
@@ -200,5 +262,31 @@
             \phi _k \\
         \end{array}
         \right)\]
+    \end{frame}
+    \begin{frame}{Appendix: Torque Integration}
+        First make a transformation to polar coordinates
+        \[\left(
+        \begin{array}{c}
+           B_x(x,y) \\
+           B_y(x,y) \\
+        \end{array}
+        \right) \to \left(
+        \begin{array}{c}
+            B_r(r,\theta) \\
+            B_{\theta}(r,\theta) \\
+        \end{array}
+        \right) \]
+        The vector $\left( B_r,\,B_{\theta} \right)^{\text{T}}$ is
+        \[\left(
+        \begin{array}{c}
+            \cos (\theta )B_x(r \cos (\theta ),r \sin (\theta ))+\sin (\theta )B_y(r \cos (\theta ),r \sin (\theta )) \\
+            \cos (\theta )B_y(r \cos (\theta ),r \sin (\theta ))-\sin (\theta )B_x(r \cos (\theta ),r \sin (\theta )) \\
+        \end{array}
+        \right)\]
+        Torque per unit length is
+        \[
+            \frac{1}{\mu_0 (r_s-r_r)}\int_{r_r}^{r_s}\int_{0}^{2\pi} r^{2}B_r B_{\theta}\mathrm{d}\theta\mathrm{d}r
+        \]
+        This integral is easily approximated by sampling
     \end{frame}
 \end{document}

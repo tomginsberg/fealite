@@ -101,10 +101,11 @@ class Meshes:
     cylinder_in_square_fine = 'meshes/cylinder-in-square-fine.tmh'
     heart = 'meshes/heart.tmh'
     unit_disk = 'meshes/unit-disk.tmh'
+    bldc_old = 'meshes/bldc_old.tmh'
+    bldc = 'meshes/bldc.tmh'
 
 
 if __name__ == '__main__':
     mesh = TriangleMesh(Meshes.heart)
     mesh.show_mesh(title=None)
     # mesh.show_mesh(title=None, label_everything=False)
-

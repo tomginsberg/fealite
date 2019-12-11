@@ -1,7 +1,7 @@
 from abc import ABC
 from math import pi
 from typing import Union, Optional, Tuple
-
+from time import time
 import numpy as np
 from scipy.sparse.linalg import spsolve
 from scipy.sparse import lil_matrix
@@ -10,9 +10,6 @@ from problem_definitions import PoissonProblemDefinition, NonLinearPoissonProble
 import matrix_assmbly
 from matrix_assmbly import NonLinearSystem, apply_neumann, apply_dirichlet
 from mesh import TriangleMesh
-
-EPS0 = 8.854e-12
-MU0 = 4e-7 * pi
 
 
 class Poisson(ABC):
@@ -29,7 +26,7 @@ class Poisson(ABC):
     def _export_solution(self, solution):
         export_path = f'solutions/{self.mesh.short_name}_{self.name}.txt'
         with open(export_path, 'w') as f:
-            f.write('\n'.join(['\t'.join([f'{c:f}' for c in cord]) + f'\t{z:f}' for cord, z in
+            f.write('\n'.join(['\t'.join([f'{c:.12f}' for c in cord]) + f'\t{z:.12f}' for cord, z in
                                zip(self.mesh.coordinates, solution)]))
 
     def solve_and_export(self):
@@ -64,6 +61,8 @@ class NonLinearPoisson(Poisson):
         super().__init__(definition)
 
     def solve_and_export(self):
+        start = time()
+        print('Starting Non Linear Solver...')
         apply_neumann(self.mesh, self.b, self.q)
         # Save a copy of b that hasn't had dirichlet modifications applied to it
         b_un_modified = self.b.copy()
@@ -73,9 +72,11 @@ class NonLinearPoisson(Poisson):
 
         # Solve for the first guess using material none value
         a_0 = np.array(spsolve(self.K.tocsc(), self.b))
+        print(f'Initial Guess Calculated: {time() - start:.3f}s')
         n_sys = NonLinearSystem(self.mesh, self.alpha, self.p, self.q,
                                 np.array(b_un_modified.todense()).transpose().squeeze())
         solution = fsolve(n_sys.sys_eval, a_0, fprime=n_sys.jacobian)
+        print(f'Solved. Total Time: {time() - start:.3f}s')
         super()._export_solution(solution)
 
 

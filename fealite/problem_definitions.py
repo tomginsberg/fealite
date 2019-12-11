@@ -40,7 +40,7 @@ class NonLinearPoissonProblemDefinition(ABC):
         self.name = name
 
     def material(self, element_marker: int, norm_grad_phi: Optional[float] = None,
-                 div: bool = False) -> Optional[float]:
+                 div: bool = False) -> float:
         raise NotImplementedError
 
     def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
