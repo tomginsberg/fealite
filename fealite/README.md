@@ -43,8 +43,8 @@ The exported file looks like the following
 ```
 Implement or choose a premade `PoissonProblemDefinition`
 ```python
-from fealite.poisson import LinearPoisson
-from fealite.problem_definitions import PoissonProblemDefinition
+from src.poisson import LinearPoisson
+from src import PoissonProblemDefinition
 
 problem_definition =
      DielectricObjectInUniformField(mesh='meshes/annulus.tmh',

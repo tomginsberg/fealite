@@ -249,10 +249,10 @@
         Global stiffness matrix assembly code for reference
         {\small
         \begin{verbatim}
-[(element[i], element[j], shp_fn.stiffness_matrix[i, j]
-* alpha(marker)) for i in range(3) for j in range(3)
-for element, shp_fn, marker in
-zip(elements, shp_fns, markers)]
+        [(element[i], element[j], shp_fn.stiffness_matrix[i, j]
+        * alpha(marker)) for i in range(3) for j in range(3)
+        for element, shp_fn, marker in
+        zip(elements, shp_fns, markers)]
         \end{verbatim}}
         List of all (row, col, val) tuples, overlapping values are summed.
     \end{frame}
@@ -279,8 +279,8 @@ zip(elements, shp_fns, markers)]
         First make a transformation to polar coordinates
         \[\left(
         \begin{array}{c}
-           B_x(x,y) \\
-           B_y(x,y) \\
+            B_x(x,y) \\
+            B_y(x,y) \\
         \end{array}
         \right) \to \left(
         \begin{array}{c}
