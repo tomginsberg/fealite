@@ -80,7 +80,7 @@
     \end{frame}
 
     \begin{frame}{Torque on a Magnetic Dipole}
-        \[\tau \propto \vec{\mu} \times \vec{B}\]
+        \[\tau = \vec{m} \times \vec{B}\]
         \begin{figure}
             \center
             \includegraphics[width=2.5in]{Momento_torcente_magnetico.pdf}
@@ -129,6 +129,17 @@
             \caption*{Yellow lines are current sheet coming out of the page, Green are in}
         \end{figure}
     \end{frame}
+    \begin{frame}{Permanent Magnets}
+        Calculating magnetization current given a desired central field and geometry.
+        \begin{gather*}
+            J_m=\frac{B_c}{\int_{-L}^L \frac{\mu }{\pi  \sqrt{R^2+z^2}} \, dz}=\frac{\pi  B_c}{\mu  \log \left(\frac{2 L \left(\sqrt{L^2+R^2}+L\right)}{R^2}+1\right)}\\
+            (B\to 1\text{T},L\to 5\text{cm},R\to 1\text{cm},\mu \to 1.05 \mu _0,\,J_m\approx 514814\text{A}/\text{m})\\
+        \end{gather*}
+        \begin{center}
+            \vspace{-.5cm}
+            \includegraphics[width=2in]{magnet_model.pdf}
+        \end{center}
+    \end{frame}
     \begin{frame}{Torque}
         Force from Maxwell's Stress tensor
         \begin{gather*}
@@ -137,7 +148,7 @@
         \end{gather*}
         Two dimensional simplification for the BLDC magnet
         \begin{equation*}
-            \tau=\frac{1}{\mu_{0}\left(r_{s}-r_{r}\right)} \int_{r_{r}}^{r_{s}} \int_{0}^{2 \pi}\left(r B_{r} B_{\theta}\right) dS
+            \tau=\frac{1}{\mu_{0}\left(r_{s}-r_{r}\right)} \int_{r_{r}}^{r_{s}} \int_{0}^{2 \pi}\left(r^2 B_{r} B_{\theta}\right) d\theta dr
         \end{equation*}
         Since this is a two dimensional contour the output is torque per unit length
     \end{frame}
@@ -210,15 +221,16 @@
     \end{frame}
     \begin{frame}{BLDC Simulation}
         Mesh and Boundaries
-        \begin{center}
-            \includegraphics[width=\linewidth]{motor_mesh.pdf}
-        \end{center}
+        \begin{figure}
+            \includegraphics[width=\linewidth]{mmesh.pdf}
+            \caption*{(left) 6 coils 9775 unknowns (right) 30 coils 10843 unknowns}
+        \end{figure}
     \end{frame}
     \begin{frame}{BLDC Simulation}
         Flux Plot
-        \begin{center}
+        \begin{figure}
             \includegraphics[width=.6\linewidth]{motor1.pdf}
-        \end{center}
+        \end{figure}
     \end{frame}
     \begin{frame}{Appendix: Mesh Generation and Format}
         \begin{itemize}
