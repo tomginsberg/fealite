@@ -2,6 +2,8 @@ from typing import Union, Optional
 import numpy as np
 from mesh import TriangleMesh, Meshes
 from poisson import PoissonProblemDefinition, LinearPoisson
+from math import pi
+from nonlinear_examples import MU0, square_wave
 
 
 class DielectricObjectInUniformField(PoissonProblemDefinition):
@@ -91,6 +93,47 @@ class Airfoil(PoissonProblemDefinition):
         pass
 
 
+class BLDC(PoissonProblemDefinition):
+    def __init__(self, mesh: Union[str, TriangleMesh] = Meshes.bldc6):
+        super().__init__(mesh, name='linearized')
+        self.coil_current = 20 / (pi / 4 * (.001 ** 2))
+        self.magnet_factor = 1.05
+
+    def source(self, element_marker: int, coordinate: np.ndarray) -> Optional[float]:
+        if element_marker == 3 or element_marker == 8:
+            return -self.coil_current
+        if element_marker == 4 or element_marker == 7:
+            return self.coil_current
+        if element_marker == 1:
+            x, y = coordinate
+            norm = np.sqrt(x ** 2 + y ** 2)
+            if 0.015 <= norm <= 0.023:
+                return 6.25e7 * square_wave(np.arctan2(x, y) / (2 * pi) + 1 / 4)
+            if 0.037 <= norm <= 0.045:
+                return -6.25e7 * square_wave(np.arctan2(x, y) / (2 * pi) + 1 / 4)
+        return 0
+
+    def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
+        if coordinate[0] ** 2 + coordinate[1] ** 2 > 0.009025:
+            return 0
+        return None
+
+    def neumann_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
+        return None
+
+    def material(self, element_marker) -> float:
+        # Stator
+        if element_marker == 2:
+            return 1 / (300 * MU0)
+
+        # Magnet
+        if element_marker == 1:
+            return 1 / (self.magnet_factor * MU0)
+
+        # Air
+        return 1 / MU0
+
+
 if __name__ == '__main__':
-    problem = LinearPoisson(DielectricObjectInUniformField(Meshes.cylinder_in_square))
+    problem = LinearPoisson(BLDC())
     problem.solve_and_export()

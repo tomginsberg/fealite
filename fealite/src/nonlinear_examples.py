@@ -93,13 +93,13 @@ class BLDC(NonLinearPoissonProblemDefinition):
             return -self.coil_current
         if element_marker == 4 or element_marker == 7:
             return self.coil_current
-        if element_marker == 2:
+        if element_marker == 1:
             x, y = coordinate
             norm = np.sqrt(x ** 2 + y ** 2)
             if 0.015 <= norm <= 0.023:
-                return 6.25e7 * square_wave(5 * np.arctan2(x, y) / (2 * pi) + 1 / 4)
+                return 6.25e7 * square_wave(np.arctan2(x, y) / (2 * pi) + 1 / 4)
             if 0.037 <= norm <= 0.045:
-                return -6.25e7 * square_wave(5 * np.arctan2(x, y) / (2 * pi) + 1 / 4)
+                return -6.25e7 * square_wave(np.arctan2(x, y) / (2 * pi) + 1 / 4)
         return 0
 
     def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
@@ -112,7 +112,7 @@ class BLDC(NonLinearPoissonProblemDefinition):
 
     def material(self, element_marker: int, norm_grad_phi: Optional[float] = None, div: bool = False) -> float:
         # Stator
-        if element_marker == 3:
+        if element_marker == 2:
             if norm_grad_phi is None:
                 norm_grad_phi = 0
             return nu(norm_grad_phi, div)
@@ -121,7 +121,7 @@ class BLDC(NonLinearPoissonProblemDefinition):
             return 0
 
         # Magnet
-        if element_marker == 2:
+        if element_marker == 1:
             return 1 / (self.magnet_factor * MU0)
 
         # Air
