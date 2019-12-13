@@ -17,11 +17,14 @@ class Poisson(ABC):
         self.f = definition.source
         self.p = definition.dirichlet_boundary
         self.q = definition.neumann_boundary
+        print("Assembling Global Matrix")
         self.K = matrix_assmbly.assemble_global_stiffness_matrix(self.mesh, self.alpha)
         self.b = matrix_assmbly.assemble_global_vector(self.mesh, self.f, self.K.shape[0])
 
     def _export_solution(self, solution):
+        print('Exporting Solution')
         export_path = f'../solutions/{self.mesh.short_name}_{self.name}.txt'
+        print(export_path)
         with open(export_path, 'w') as f:
             f.write('\n'.join(['\t'.join([f'{c:.12f}' for c in cord]) + f'\t{z:.12f}' for cord, z in
                                zip(self.mesh.coordinates, solution)]))
@@ -43,6 +46,7 @@ class LinearPoisson(Poisson):
     def solve_and_export(self):
         apply_dirichlet(self.mesh, self.K, self.b, self.p)
         apply_neumann(self.mesh, self.b, self.q)
+        print('Solving Linear System')
         super()._export_solution(spsolve(self.K.tocsc(), self.b))
 
 

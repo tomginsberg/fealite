@@ -97,9 +97,9 @@ class BLDC(NonLinearPoissonProblemDefinition):
             x, y = coordinate
             norm = np.sqrt(x ** 2 + y ** 2)
             if 0.015 <= norm <= 0.023:
-                return 6.25e7 * square_wave(np.arctan2(x, y) / (2 * pi) + 1 / 4)
+                return 6.25e7 * square_wave(np.arctan2(y, x) / (2 * pi) + 1 / 4)
             if 0.037 <= norm <= 0.045:
-                return -6.25e7 * square_wave(np.arctan2(x, y) / (2 * pi) + 1 / 4)
+                return -6.25e7 * square_wave(np.arctan2(y, x) / (2 * pi) + 1 / 4)
         return 0
 
     def dirichlet_boundary(self, boundary_marker: int, coordinate: np.ndarray) -> Optional[float]:
