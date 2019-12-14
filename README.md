@@ -276,7 +276,7 @@ Visualize the results
 ```Mathematica
 current = 20
 A = Interpolation[
-  Import["../solutions/bldc-6_linearized.txt", "Data"], 
+  Import["../solutions/bldc-6_nonlinear.txt", "Data"], 
   InterpolationOrder -> 1]
 {min, max} = MinMax[A["ValuesOnGrid"]]
 
