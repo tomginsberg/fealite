@@ -181,7 +181,7 @@ ExportMesh["../meshes/bldc-6.tmh", MotorMesh]
 ![](https://i.imgur.com/zfGwmWP.png)
 
 Define the boundary value problem by implementing a `NonLinearPoissonProblemDefinition`
-```python=
+```python
 from typing import Union, Optional
 import numpy as np
 from mesh import TriangleMesh, Meshes
