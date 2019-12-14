@@ -2,7 +2,7 @@
 
 *A Simple Workflow for Linear & Non Linear Poisson Problems*
 ### Linear Finite Elements
-#### Example 1: *Dielectric Cylinder in a Uniform Electric Field*
+#### Example 1: *Dielectric Annulus in a Uniform Electric Field*
 Create the Mesh with Mathematica
 ```Mathematica
 (* If needed *)
