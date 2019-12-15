@@ -341,7 +341,7 @@ fluxDensity =
 ```
 ![](https://i.imgur.com/UNX9WNk.jpg)
 
-Calculate the torque on ther magnet by averaging several contour integrals inside the airgap
+Calculate the torque on the magnet by averaging several contour integrals inside the airgap
 ```Mathematica
 torque = ListLinePlot[#, 
     PlotLabel -> 
