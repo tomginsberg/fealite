@@ -16,7 +16,8 @@
 \usepackage{verbatim}
 \usepackage{physics}
 \usepackage{amsmath}
-\newcommand\norm[1]{\left\lVert#1\right\rVert}
+\newcommand\normm[1]{\left\lVert#1\right\rVert}
+
 
 \makeatletter
 \renewcommand\footnotesize{%
@@ -96,15 +97,15 @@
             \caption*{Field produced by a motor coil}
         \end{figure}
     \end{frame}
-
+    
     \begin{frame}{Magnetostatics in a 2D Cross Section}
         If current is only perpendicular to the 2D plane, then
         \begin{align*}
             &\nabla\times \nu B=J\text{ and }\nabla \times A = B\\
-            &\nabla\times \nu \nabla\times A=J \iff \nabla\cdot \nu \nabla A=J
+            &\nabla\times \nu \nabla\times A=J \iff \nabla\cdot \nu \nabla A=-J
         \end{align*}
         \begin{center}
-            \includegraphics[width=3in]{heartwire.pdf}
+            \includegraphics[width=2.5in]{heartwire.pdf}
         \end{center}
     \end{frame}
     \begin{frame}{Permanent Magnets}
@@ -114,7 +115,7 @@
             J_m&\triangleq \nabla\times \nu\mu_0 M_r \implies \nabla \times \nu B=J+J_m
         \end{align*}
         \begin{center}
-            \includegraphics[width=3in]{heartmag.pdf}
+            \includegraphics[width=2.5in]{heartmag.pdf}
         \end{center}
     \end{frame}
     \begin{frame}{Permenant Magnets}
@@ -126,7 +127,7 @@
         \begin{figure}
             \center
             \includegraphics[width=2in]{current_magnet.pdf}
-            \caption*{Yellow lines are current sheet coming out of the page, Green are in}
+            \caption*{Yellow lines indicate current sheets coming out of the page, Orange are in}
         \end{figure}
     \end{frame}
     \begin{frame}{Permanent Magnets}
@@ -152,13 +153,23 @@
         \end{equation*}
         Since this is a two dimensional contour the output is torque per unit length
     \end{frame}
+    
+    \begin{frame}{BH Curves}
+        A $BH$ curve is used to obtain the permeability relationship of non-linear materials in external fields.
+        \begin{center}
+            \hspace*{-0.7in}
+            \includegraphics[width = 5.5 in]{bhcurve.pdf}
+        \end{center}
+        $BH$ curves for permanent magnets exhibit a hysteresis effect, however magnets have a relatively low permeability ($\mu_r\approx1.05$) and operate far from their extremes.
+    \end{frame}
+    
     \begin{frame}{Non Linear FEM}
         How can we use FEM to solve problems in the form of
         \[\nabla\cdot\left(\alpha(\|\nabla\phi\|)*\nabla\phi\right)=f(x,y)\]
         \textbf{First thing}: Determine $\|\nabla\phi\|$ on a single element in terms of node values of $\phi$: $\phi^{e}:=\left( \phi_i, \phi_j, \phi_k \right)^{\text{T}}$
         \begin{gather*}
-            \norm{\left(\pdv{\phi}{x},\pdv{\phi}{y}\right)}=\norm{\left(\pdv{\vec{N}}{x}, \pdv{\vec{N}}{y} \right)^{\text{T}}\cdot \phi^{e}}\\
-            \hat{\alpha}(\phi^e):=\alpha(\norm{\nabla\phi})
+            \normm{\left(\pdv{\phi}{x},\pdv{\phi}{y}\right)}=\normm{\left(\pdv{\vec{N}}{x}, \pdv{\vec{N}}{y} \right)^{\text{T}}\cdot \phi^{e}}\\
+            \hat{\alpha}(\phi^e):=\alpha(\normm{\nabla\phi})
         \end{gather*}
     \end{frame}
     \begin{frame}{Solving the Non Linear System}
@@ -207,10 +218,10 @@
         \end{center}
     \end{frame}
 
-    \begin{frame}{Solvers}
-        \begin{itemize}
-            \item Linear FEM:\\
-            Sparse linear systems solved with {\verb!scipy.linalg.sparse.spsolve}\footnote{Wrapper for SuperLU 4.0 (LU decomposition)}
+    \begin{frame}\frametitle{Solvers}
+\begin{itemize}
+             \item Linear FEM:\\
+             Sparse linear systems solved with {\verb!scipy.linalg.sparse.spsolve}\footnote{Wrapper for SuperLU 4.0 (LU decomposition)}
             \item Non Linear FEM:
             Sparse non linear systems solved with {\verb!scipy.optimize.fsolve}\footnote{Wrapper for MINIPACK hybrj (Newton's Method + Gradient Descent)}.
             Jacobian is analytically computed to speed up the solver.
@@ -227,11 +238,101 @@
         \end{figure}
     \end{frame}
     \begin{frame}{BLDC Simulation}
-        Flux Plot
+        No Current
         \begin{figure}
-            \includegraphics[width=.6\linewidth]{motor1.pdf}
+            \centering
+            \includegraphics[width=3in]{potential-unloaded-6coils.pdf}
+            \label{fig:my_label}
         \end{figure}
     \end{frame}
+    
+    \begin{frame}{BLDC Simulation}
+        No Current
+        \begin{figure}
+            \centering
+            \includegraphics[width=3in]{flux-unloaded-6coils.jpg}
+            \label{fig:my_label}
+        \end{figure}
+    \end{frame}
+    
+    \begin{frame}{BLDC Simulation}
+        Torque
+        \begin{figure}
+            \centering
+            \includegraphics[width=3in]{torque-unloaded.pdf}
+            \label{fig:my_label}
+        \end{figure}
+    \end{frame}
+    
+    \begin{frame}{BLDC Simulation}
+        20A Load Current
+        \begin{figure}
+            \centering
+            \includegraphics[width=3in]{potential-loaded-6coils.pdf}
+            \label{fig:my_label}
+        \end{figure}
+    \end{frame}
+    
+    \begin{frame}{BLDC Simulation}
+        20A Load Current
+        \begin{figure}
+            \centering
+            \includegraphics[width=3in]{flux-loaded-6coils.jpg}
+            \label{fig:my_label}
+        \end{figure}
+    \end{frame}
+    
+    \begin{frame}{BLDC Simulation}
+        Torque 
+        \begin{figure}
+            \centering
+            \includegraphics[width=3in]{torque1.pdf}
+            \label{fig:my_label}
+        \end{figure}
+    \end{frame}
+    
+    \begin{frame}{BLDC Simulation}
+        Rotated Magnet
+        \begin{figure}
+            \centering
+            \includegraphics[width=3in]{potential-rot90-6coils.pdf}
+            \label{fig:my_label}
+        \end{figure}
+        As hoped $\tau \approx 0$ [N]
+    \end{frame}
+    
+    \begin{frame}{BLDC Simulation}
+        More Coils and Poles
+        \begin{figure}
+            \centering
+            \includegraphics[width=3in]{potential-loaded-20coils.pdf}
+            \label{fig:my_label}
+        \end{figure}
+        $\tau\approx 250$ [N]
+    \end{frame}
+    
+    \begin{frame}{BLDC Simulation}
+        More Coils and Poles
+        \begin{figure}
+            \centering
+            \includegraphics[width=3in]{flux-loaded-20coils.jpg}
+            \label{fig:my_label}
+        \end{figure}
+    \end{frame}
+    
+        \begin{frame}{Appendix: Coil Values}
+    
+        Assumptions:
+        \begin{itemize}
+            \item Wire diameter = 1mm
+            \item Current = 20A
+        \end{itemize}
+        \hspace{5pt} This results in a current density of:
+        
+        $$\frac{20A}{\frac{\pi}{4} * 1mm^2} = 25.5 \  \frac{MA}{m^2}$$
+        
+    \end{frame}
+    
     \begin{frame}{Appendix: Mesh Generation and Format}
         \begin{itemize}
             \item Meshes are generated using the Mathematica 12 mesh generator
@@ -244,28 +345,31 @@
             \includegraphics[width=3.5in]{meshdemo.png}
         \end{figure}
     \end{frame}
-    \begin{frame}[fragile]{Appendix: Matrix Assembly}
+    \begin{frame}[fragile]\frametitle{Appendix: Matrix Assembly}
 
         Global stiffness matrix assembly code for reference
-        {\small
+        {
+        \small
         \begin{verbatim}
         [(element[i], element[j], shp_fn.stiffness_matrix[i, j]
         * alpha(marker)) for i in range(3) for j in range(3)
         for element, shp_fn, marker in
         zip(elements, shp_fns, markers)]
-        \end{verbatim}}
+        \end{verbatim}
+        }
         List of all (row, col, val) tuples, overlapping values are summed.
     \end{frame}
-    \begin{frame}[fragile]{Appendix: Gradient of $\alpha$}
+    
+    \begin{frame}[fragile]\frametitle{Appendix: Gradient of $\alpha$}
         Given a function $\alpha(\|\nabla\phi\|)$ where
-        \[\norm{\nabla\phi}=\norm{\left(\pdv{\vec{N}}{x}, \pdv{\vec{N}}{y} \right)^{\text{T}}\cdot \left(
+        \[\normm{\nabla\phi}=\normm{\left(\pdv{\vec{N}}{x}, \pdv{\vec{N}}{y} \right)^{\text{T}}\cdot \left(
         \begin{array}{c}
             \phi _i \\
             \phi _j \\
             \phi _k \\
         \end{array}
         \right)}\]
-        \[\nabla\alpha=\frac{\alpha'(\norm{\nabla\phi})}{\norm{\nabla\phi}}
+        \[\nabla\alpha=\frac{\alpha'(\normm{\nabla\phi})}{\normm{\nabla\phi}}
         \left(\pdv{\vec{N}}{x}\cdot\left(\pdv{\vec{N}}{x}\right)^{\text{T}}+
         \pdv{\vec{N}}{y}\cdot\left(\pdv{\vec{N}}{y}\right)^{\text{T}}\right)\cdot \left(
         \begin{array}{c}
